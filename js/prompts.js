@@ -147,11 +147,12 @@ const renderEditor = () => {
     </div>
   `;
 
-  /* 실시간 토큰 추정 업데이트 */
+  /* 실시간 토큰 추정 + 자동 저장 */
   const textarea = card.querySelector('#prompt-textarea');
   const tokenCount = card.querySelector('#token-count');
   textarea.addEventListener('input', () => {
     tokenCount.textContent = estimateTokens(textarea.value);
+    autoSave();
   });
 
   /* 저장 버튼 */
@@ -262,3 +263,6 @@ const showToast = (message) => {
 
 /* ─── DOM 준비 후 초기화 ─── */
 document.addEventListener('DOMContentLoaded', init);
+
+/* 새로고침/탭 닫기 직전 마지막 저장 */
+window.addEventListener('beforeunload', autoSave);

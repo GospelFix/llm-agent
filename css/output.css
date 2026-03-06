@@ -49,14 +49,43 @@
   margin-bottom: 16px;
 }
 
+.run-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  margin-bottom: 6px;
+}
+
 .run-group-label {
   font-family: var(--font-mono);
   font-size: 9px;
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  padding: 0 8px;
-  margin-bottom: 6px;
+}
+
+.zip-btn {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  line-height: 1.4;
+}
+
+.zip-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-dim);
+}
+
+.zip-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* ─── 파일 항목 ─── */

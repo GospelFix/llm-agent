@@ -57,12 +57,20 @@ const renderSidebar = () => {
     `;
   }).join('');
 
-  /* 토큰 잔여량 */
+  /* 크레딧 사용량 (80% 초과 시 경고색) */
+  const usedCredits = state.tokenMax - state.tokenBalance;
+  const usedPct = state.tokenMax > 0 ? Math.round((usedCredits / state.tokenMax) * 100) : 0;
+  const creditColor = usedPct >= 80 ? 'var(--accent-pm)' : 'var(--accent-pipe)';
+  const creditLabel = usedPct >= 80 ? '⚠ 크레딧 부족' : '크레딧 사용량';
   const tokenHTML = `
     <div class="sidebar-footer">
       <div class="token-balance">
-        토큰 잔여<br>
-        <span class="token-balance-value" id="sidebar-token-balance">${state.tokenBalance.toLocaleString()}</span> / ${state.tokenMax.toLocaleString()}
+        <span style="color:var(--text-dim);font-size:9px">${creditLabel}</span><br>
+        <span class="token-balance-value" id="sidebar-token-balance" style="color:${creditColor}">${usedCredits.toLocaleString()}</span>
+        <span style="color:var(--text-dim)"> / ${state.tokenMax.toLocaleString()} 크레딧</span>
+        <div style="margin-top:6px;height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+          <div id="sidebar-credit-bar" style="height:100%;width:${usedPct}%;background:${creditColor};border-radius:2px;transition:width 0.4s ease"></div>
+        </div>
       </div>
     </div>
   `;
@@ -96,13 +104,18 @@ const initHamburger = () => {
   });
 };
 
-/** 사이드바 토큰 잔여량 갱신 */
+/** 사이드바 크레딧 사용량 갱신 */
 const updateTokenDisplay = () => {
   const el = document.getElementById('sidebar-token-balance');
-  if (el) {
-    const state = Store.get();
-    el.textContent = state.tokenBalance.toLocaleString();
-  }
+  const bar = document.getElementById('sidebar-credit-bar');
+  if (!el) return;
+  const state = Store.get();
+  const usedCredits = state.tokenMax - state.tokenBalance;
+  const usedPct = state.tokenMax > 0 ? Math.round((usedCredits / state.tokenMax) * 100) : 0;
+  const creditColor = usedPct >= 80 ? 'var(--accent-pm)' : 'var(--accent-pipe)';
+  el.textContent = usedCredits.toLocaleString();
+  el.style.color = creditColor;
+  if (bar) { bar.style.width = `${usedPct}%`; bar.style.background = creditColor; }
 };
 
 /* DOM 준비 시 초기화 */

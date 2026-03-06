@@ -89,7 +89,12 @@ const renderFilePanel = () => {
 
     return `
       <div class="run-group">
-        <div class="run-group-label">${run.label}</div>
+        <div class="run-group-header">
+          <div class="run-group-label">${run.label}</div>
+          <button class="zip-btn" data-run-id="${run.id}" aria-label="${run.label} 전체 ZIP 다운로드">
+            ⬇ ZIP
+          </button>
+        </div>
         ${itemsHTML}
       </div>
     `;
@@ -103,6 +108,11 @@ const renderFilePanel = () => {
     item.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') selectOutput(item.dataset.outputId);
     });
+  });
+
+  /* ZIP 다운로드 버튼 이벤트 */
+  container.querySelectorAll('.zip-btn[data-run-id]').forEach(btn => {
+    btn.addEventListener('click', () => downloadRunZip(btn.dataset.runId, btn));
   });
 };
 
@@ -153,7 +163,7 @@ const renderContentViewer = (outputId) => {
       </div>
     </div>
     <div class="viewer-body">
-      <pre class="content-text" id="content-text">${escapeHTML(output.content)}</pre>
+      <pre class="content-text" id="content-text">${escapeHTML(buildFrontmatter(output, agent) + output.content)}</pre>
     </div>
   `;
 
@@ -211,17 +221,76 @@ const copyContent = async (text) => {
 
 /* ─── 다운로드 ─── */
 const downloadContent = (output) => {
-  const blob = new Blob([output.content], { type: 'text/plain;charset=utf-8' });
+  const agent = agentsData.find(a => a.id === output.agentId);
+  const content = agent
+    ? buildFrontmatter(output, agent) + output.content
+    : output.content;
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${output.fileName}_${output.runId}.txt`;
+  link.download = `${output.fileName}_${output.runId}.md`;
   link.style.display = 'none';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   /* 메모리 해제 */
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+/* ─── 실행 그룹 전체 ZIP 다운로드 ─── */
+const downloadRunZip = async (runId, btnEl) => {
+  const run = historyData.find(r => r.id === runId);
+  const runOutputs = outputsData.filter(o => o.runId === runId);
+  if (!run || !runOutputs.length) return;
+
+  /* 버튼 로딩 상태 */
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.textContent = '⏳';
+  }
+
+  try {
+    const zip = new JSZip();
+
+    runOutputs.forEach(output => {
+      const agent = agentsData.find(a => a.id === output.agentId);
+      const content = agent
+        ? buildFrontmatter(output, agent) + output.content
+        : output.content;
+      zip.file(`${output.fileName}.md`, content);
+    });
+
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${run.label.replace(/\s/g, '_')}_${runId}.zip`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } finally {
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.textContent = '⬇ ZIP';
+    }
+  }
+};
+
+/** YAML 프론트매터 문자열 생성 */
+const buildFrontmatter = (output, agent) => {
+  return [
+    '---',
+    `name: ${output.fileName}`,
+    `label: ${output.label}`,
+    `agent: ${output.agentId}`,
+    `description: ${agent.desc}`,
+    `model: ${agent.model}`,
+    '---',
+    '',
+  ].join('\n');
 };
 
 /** HTML 이스케이프 (XSS 방지) */

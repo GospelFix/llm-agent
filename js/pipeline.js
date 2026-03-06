@@ -22,6 +22,28 @@ const RANK_MAP = {
   director:  { label: '부장',     icon: '🏆' },
 };
 
+/* ─── 직급별 토큰 한도 (1 크레딧 = 1,000 토큰) ─── */
+const RANK_TOKEN_LIMITS = {
+  '인턴':     500,
+  '신입사원': 1000,
+  '대리':     2000,
+  '과장':     4000,
+  '팀장':     8000,
+  '부장':     10000, // 무제한이지만 과금 기준은 10,000
+};
+
+/** 에이전트의 실제 직급 한국어 라벨 반환 (오버라이드 반영) */
+const getAgentRankLabel = (agent, state) => {
+  const override = state.agentOverrides[agent.id] || {};
+  if (override.rank && RANK_MAP[override.rank]) {
+    return RANK_MAP[override.rank].label;
+  }
+  return agent.rank;
+};
+
+/** 토큰 → 크레딧 변환 (1 크레딧 = 1,000 토큰, 올림) */
+const calcCredits = (tokens) => Math.ceil(tokens / 1000);
+
 /* ─── 초기화 ─── */
 const init = async () => {
   try {
@@ -260,7 +282,7 @@ const renderResultList = () => {
         : '—';
 
     return `
-      <div class="result-item ${result.status}" data-output-id="${result.outputId}" role="button" tabindex="0"
+      <div class="result-item ${result.status}" data-output-id="${result.outputId}" data-agent-id="${result.agentId}" role="button" tabindex="0"
            aria-label="${agent.name} 결과 보기">
         ${statusIcon}
         <div class="result-info">
@@ -277,11 +299,11 @@ const renderResultList = () => {
 
   container.innerHTML = listHTML;
 
-  /* 클릭 시 미리보기 전환 */
+  /* 클릭 시 미리보기 전환 (agentId도 함께 전달 → resolved prompt 표시용) */
   container.querySelectorAll('.result-item[data-output-id]').forEach(item => {
-    item.addEventListener('click', () => renderOutputPreview(item.dataset.outputId));
+    item.addEventListener('click', () => renderOutputPreview(item.dataset.outputId, item.dataset.agentId));
     item.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') renderOutputPreview(item.dataset.outputId);
+      if (e.key === 'Enter') renderOutputPreview(item.dataset.outputId, item.dataset.agentId);
     });
   });
 
@@ -357,21 +379,44 @@ const renderTokenBars = () => {
 };
 
 /** 아웃풋 미리보기 렌더링 */
-const renderOutputPreview = (outputId) => {
+const renderOutputPreview = (outputId, agentId) => {
   const previewTitle = document.getElementById('preview-title');
   const previewText = document.getElementById('preview-text');
   const previewLink = document.getElementById('preview-link');
   if (!previewTitle || !previewText) return;
 
-  /* outputId 없으면 현재 런의 첫 번째 완료 결과 표시 */
   const currentRun = historyData[currentRunIndex];
-  const targetId = outputId || (currentRun && currentRun.results[0]?.outputId);
 
-  const output = outputsData.find(o => o.id === targetId);
+  /* "null" 문자열 처리 — 새 시뮬레이션 런은 outputId가 null */
+  const validId = outputId && outputId !== 'null' ? outputId : null;
+  const targetId = validId || (currentRun && currentRun.results[0]?.outputId);
+
+  /* outputId로 못 찾으면 agentId로 fallback (새 시뮬레이션 런 대응) */
+  let output = outputsData.find(o => o.id === targetId);
+  if (!output && agentId) {
+    output = outputsData.find(o => o.agentId === agentId);
+  }
   if (!output) return;
 
   previewTitle.textContent = `📄 ${output.label}`;
   previewText.textContent = output.content;
+
+  /* 사용된 resolved prompt 표시 (현재 런에 저장된 경우) */
+  const existingDetails = previewText.parentElement.querySelector('.prompt-details');
+  if (existingDetails) existingDetails.remove();
+
+  if (agentId && currentRun) {
+    const result = currentRun.results.find(r => r.agentId === agentId);
+    if (result && result.resolvedPrompt) {
+      const details = document.createElement('details');
+      details.className = 'prompt-details';
+      details.innerHTML = `
+        <summary>📋 사용된 프롬프트 보기</summary>
+        <pre>${result.resolvedPrompt}</pre>
+      `;
+      previewText.parentElement.appendChild(details);
+    }
+  }
 
   if (previewLink) {
     previewLink.href = `./pages/output.html?run=${output.runId}&output=${output.id}`;
@@ -417,10 +462,46 @@ const simulateRun = async (startAgentId) => {
   renderRunPanel();
   renderPipelineSteps();
 
+  /* ── 크레딧 사전 체크 ── */
+  const preState = Store.get();
+  const requiredCredits = agentsData.slice(startIdx).reduce((sum, agent) => {
+    const rankLabel = getAgentRankLabel(agent, preState);
+    return sum + calcCredits(RANK_TOKEN_LIMITS[rankLabel] || 2000);
+  }, 0);
+
+  if (preState.tokenBalance < requiredCredits) {
+    alert(`크레딧이 부족합니다.\n필요: ${requiredCredits} 크레딧 / 잔여: ${preState.tokenBalance} 크레딧`);
+    isRunning = false;
+    if (runBtn) { runBtn.disabled = false; runBtn.textContent = '▶ 전체 실행'; }
+    if (runBtnCard) { runBtnCard.disabled = false; runBtnCard.innerHTML = '<span>▶</span> 실행 중'; }
+    return;
+  }
+
+  /* 사용자 입력 + 이전 스텝 출력 수집 컨텍스트 초기화 */
+  const userInput = Store.get().userInput || '';
+  const collectedOutputs = {};
+
+  /* startIdx > 0인 경우: 이미 완료된 스텝의 outputs 사전 수집 */
+  agentsData.slice(0, startIdx).forEach(agent => {
+    const existing = outputsData.find(o => o.agentId === agent.id);
+    if (existing) collectedOutputs[agent.outputFile] = existing.content;
+  });
+
   /* 각 에이전트를 순서대로 시뮬레이션 */
   for (let i = startIdx; i < agentsData.length; i++) {
     const agent = agentsData[i];
+
+    /* 이 에이전트의 프롬프트를 resolve ({{변수}} → 실제 값) */
+    const state = Store.get();
+    const override = state.agentOverrides[agent.id] || {};
+    const rawPrompt = state.promptOverrides[agent.id]
+      ?? override.systemPrompt
+      ?? agent.systemPrompt
+      ?? '';
+    const resolvedPrompt = resolvePrompt(rawPrompt, userInput, collectedOutputs);
+
     newRun.results[i].status = 'running';
+    newRun.results[i].resolvedPrompt = resolvedPrompt;
     Store.set({ activeRunStep: agent.id, pipelineStatus: 'running' });
     renderRunPanel();
     renderPipelineSteps();
@@ -429,13 +510,27 @@ const simulateRun = async (startAgentId) => {
     const duration = 2 + Math.random() * 2;
     await delay(duration * 1000);
 
-    /* 완료 처리 */
-    const tokens = Math.floor(200 + Math.random() * 1200);
+    /* 직급 기반 토큰 시뮬레이션 (직급 한도의 60~100%) */
+    const rankLabel = getAgentRankLabel(agent, Store.get());
+    const tokenLimit = RANK_TOKEN_LIMITS[rankLabel] || 2000;
+    const tokens = Math.floor(tokenLimit * (0.6 + Math.random() * 0.4));
+    const usedCredits = calcCredits(tokens);
+
     newRun.results[i].status = 'done';
     newRun.results[i].duration = parseFloat(duration.toFixed(1));
     newRun.results[i].tokens = tokens;
+    newRun.results[i].credits = usedCredits;
     newRun.completedSteps = i + 1;
     newRun.totalTokens += tokens;
+
+    /* 크레딧 차감 */
+    const afterState = Store.get();
+    Store.set({ tokenBalance: Math.max(0, afterState.tokenBalance - usedCredits) });
+    updateTokenDisplay();
+
+    /* 이 에이전트의 출력을 다음 에이전트가 참조할 수 있도록 수집 */
+    const simOutput = outputsData.find(o => o.agentId === agent.id);
+    if (simOutput) collectedOutputs[agent.outputFile] = simOutput.content;
 
     renderRunPanel();
     renderPipelineSteps();
@@ -459,6 +554,16 @@ const startNewRun = () => {
   if (!isRunning) simulateRun();
 };
 
+/** {{변수}}를 실제 값으로 치환 */
+const resolvePrompt = (prompt, userInput, collectedOutputs) => {
+  return prompt
+    .replace(/\{\{user_input\}\}/g, userInput              || '(사용자 입력 없음)')
+    .replace(/\{\{prd\}\}/g,        collectedOutputs.prd       || '(PRD 미생성)')
+    .replace(/\{\{design\}\}/g,     collectedOutputs.design    || '(디자인 명세 미생성)')
+    .replace(/\{\{tech_spec\}\}/g,  collectedOutputs.tech_spec || '(기술 명세 미생성)')
+    .replace(/\{\{test_plan\}\}/g,  collectedOutputs.test_plan || '(테스트 계획 미생성)');
+};
+
 /** Promise 기반 딜레이 헬퍼 */
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -469,4 +574,14 @@ document.addEventListener('DOMContentLoaded', () => {
   /* 전체 실행 버튼 이벤트 */
   document.getElementById('run-btn-header')?.addEventListener('click', () => simulateRun());
   document.getElementById('run-btn-card')?.addEventListener('click', () => simulateRun());
+
+  /* 사용자 입력 → Store 저장 ({{user_input}} 변수 소스) */
+  const userInputArea = document.getElementById('user-input-area');
+  if (userInputArea) {
+    /* 저장된 값 복원 */
+    userInputArea.value = Store.get().userInput || '';
+    userInputArea.addEventListener('input', () => {
+      Store.set({ userInput: userInputArea.value });
+    });
+  }
 });

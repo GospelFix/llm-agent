@@ -7,14 +7,15 @@ const Store = (() => {
   const KEY = 'mas_state';
 
   const DEFAULT = {
-    tokenBalance: 1420,
-    tokenMax: 2000,
+    tokenBalance: 100,   // Free 플랜: 100 크레딧 (파이프라인 약 6~7회 실행)
+    tokenMax: 100,       // 플랜 한도
     currentRunId: 'run-001',
     selectedOutputId: null,
     agentOverrides: {},    // { [agentId]: { model, tokenMultiplier } }
     promptOverrides: {},   // { [agentId]: string }
     pipelineStatus: 'idle', // 'idle' | 'running' | 'completed'
     activeRunStep: null,   // 현재 실행 중인 에이전트 id
+    userInput: '',         // {{user_input}} 변수에 주입되는 사용자 아이디어
   };
 
   /** 저장된 상태 읽기 (없으면 DEFAULT 반환) */

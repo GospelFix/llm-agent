@@ -43,6 +43,19 @@
         <span class="context-text">컨텍스트 누적 중 — 1차 실행 결과물이 다음 실행에 자동 포함됩니다</span>
       </div>
 
+      <!-- 사용자 아이디어 입력 카드 -->
+      <div class="card user-input-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">아이디어 입력</div>
+            <div class="card-subtitle">{{user_input}} 변수로 에이전트 프롬프트에서 참조됩니다</div>
+          </div>
+        </div>
+        <textarea id="user-input-area" class="user-input-textarea"
+          placeholder="개발할 서비스 아이디어를 입력하세요...&#10;예) 주식 실시간 알림 봇: React + Node.js, Telegram 알림 지원"
+          rows="3" aria-label="사용자 아이디어 입력"></textarea>
+      </div>
+
       <!-- 파이프라인 카드 -->
       <div class="card pipeline-card">
         <div class="card-header">
