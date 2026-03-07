@@ -15,7 +15,18 @@ const Store = (() => {
     promptOverrides: {},   // { [agentId]: string }
     pipelineStatus: 'idle', // 'idle' | 'running' | 'completed'
     activeRunStep: null,   // 현재 실행 중인 에이전트 id
-    userInput: '',         // {{user_input}} 변수에 주입되는 사용자 아이디어
+    apiKey: '',            // Anthropic API 키 (실제 AI 생성에 사용)
+    userInput: '',         // {{user_input}} 변수에 주입되는 프로젝트 요청
+    generatedRuns: [],     // 실제 생성된 실행 기록 (localStorage 영속)
+    generatedOutputs: [],  // 실제 생성된 아웃풋 파일 (localStorage 영속)
+    brandInfo: {           // {{brand_info}} 변수에 주입되는 클라이언트 브랜드 가이드라인
+      brandName: '',
+      slogan: '',
+      brandColors: '',
+      toneAndManner: '',
+      targetAudience: '',
+      competitors: '',
+    },
   };
 
   /** 저장된 상태 읽기 (없으면 DEFAULT 반환) */

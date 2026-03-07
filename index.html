@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>파이프라인 — Multi-Agent Studio</title>
+  <title>파이프라인 — Marketing Agent Studio</title>
   <link rel="stylesheet" href="./css/style.css">
   <link rel="stylesheet" href="./css/pipeline.css">
 </head>
@@ -21,8 +21,8 @@
   <!-- 페이지 헤더 -->
   <div class="page-header">
     <div>
-      <h1 class="page-title">파이프라인 <span>실행</span></h1>
-      <p class="page-subtitle">여러 번 실행할수록 이전 결과물이 다음 실행의 컨텍스트로 누적됩니다</p>
+      <h1 class="page-title">마케팅 <span>파이프라인</span></h1>
+      <p class="page-subtitle">프로젝트 요청과 브랜드 가이드라인을 입력하면 전략서·카피·비주얼 브리프·콘텐츠 계획을 자동 생성합니다</p>
     </div>
     <div class="header-actions">
       <a href="#" class="btn btn-ghost">← 프로젝트</a>
@@ -43,17 +43,81 @@
         <span class="context-text">컨텍스트 누적 중 — 1차 실행 결과물이 다음 실행에 자동 포함됩니다</span>
       </div>
 
-      <!-- 사용자 아이디어 입력 카드 -->
+      <!-- API 키 설정 카드 -->
+      <div class="card api-key-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">AI 연결 설정</div>
+            <div class="card-subtitle">Anthropic API 키 입력 시 실제 AI가 결과물을 생성합니다</div>
+          </div>
+          <div class="api-key-status" id="api-key-status"></div>
+        </div>
+        <div class="api-key-row">
+          <input type="password" id="api-key-input" class="brand-input api-key-input"
+            placeholder="sk-ant-api03-..." aria-label="Anthropic API 키 입력" autocomplete="off" />
+          <button class="btn btn-primary btn-sm" id="api-key-save-btn" aria-label="API 키 저장">저장</button>
+          <button class="btn btn-ghost btn-sm" id="api-key-clear-btn" aria-label="API 키 삭제" style="display:none">삭제</button>
+        </div>
+      </div>
+
+      <!-- 프로젝트 요청 입력 카드 -->
       <div class="card user-input-card">
         <div class="card-header">
           <div>
-            <div class="card-title">아이디어 입력</div>
+            <div class="card-title">프로젝트 요청</div>
             <div class="card-subtitle">{{user_input}} 변수로 에이전트 프롬프트에서 참조됩니다</div>
           </div>
         </div>
         <textarea id="user-input-area" class="user-input-textarea"
-          placeholder="개발할 서비스 아이디어를 입력하세요...&#10;예) 주식 실시간 알림 봇: React + Node.js, Telegram 알림 지원"
-          rows="3" aria-label="사용자 아이디어 입력"></textarea>
+          placeholder="마케팅 프로젝트 요청을 입력하세요...&#10;예) 해남 꿀고구마 스마트스토어 론칭 캠페인. 30~40대 주부 타겟, 봄 시즌 SNS 광고 집행 예정."
+          rows="3" aria-label="프로젝트 요청 입력"></textarea>
+      </div>
+
+      <!-- 클라이언트 브랜드 가이드라인 카드 -->
+      <div class="card brand-info-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">클라이언트 정보 <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);font-weight:400">— 브랜드 가이드라인</span></div>
+            <div class="card-subtitle">{{brand_info}} 변수로 모든 에이전트 프롬프트에서 참조됩니다</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="brand-info-toggle" aria-expanded="false" aria-controls="brand-info-body">
+            펼치기 ▾
+          </button>
+        </div>
+        <div id="brand-info-body" class="brand-info-body" style="display:none;">
+          <div class="brand-info-grid">
+            <div class="brand-field">
+              <label class="brand-label" for="brand-name">브랜드명</label>
+              <input type="text" id="brand-name" class="brand-input"
+                placeholder="예) 해남 꿀고구마" aria-label="브랜드명 입력" />
+            </div>
+            <div class="brand-field">
+              <label class="brand-label" for="brand-slogan">슬로건 / 태그라인</label>
+              <input type="text" id="brand-slogan" class="brand-input"
+                placeholder="예) 해남에서 온 달콤한 선물" aria-label="슬로건 입력" />
+            </div>
+            <div class="brand-field">
+              <label class="brand-label" for="brand-colors">브랜드 컬러</label>
+              <input type="text" id="brand-colors" class="brand-input"
+                placeholder="예) 브라운(#8B4513), 크림(#FFF8F0)" aria-label="브랜드 컬러 입력" />
+            </div>
+            <div class="brand-field">
+              <label class="brand-label" for="brand-tone">톤앤매너</label>
+              <input type="text" id="brand-tone" class="brand-input"
+                placeholder="예) 따뜻함, 신뢰, 자연, 가족 친화적" aria-label="톤앤매너 입력" />
+            </div>
+            <div class="brand-field">
+              <label class="brand-label" for="brand-target">타겟 고객</label>
+              <input type="text" id="brand-target" class="brand-input"
+                placeholder="예) 30~40대 건강에 관심 있는 주부" aria-label="타겟 고객 입력" />
+            </div>
+            <div class="brand-field">
+              <label class="brand-label" for="brand-competitors">경쟁사</label>
+              <input type="text" id="brand-competitors" class="brand-input"
+                placeholder="예) 대형마트 농산물 코너, 타 스마트스토어 고구마" aria-label="경쟁사 입력" />
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 파이프라인 카드 -->

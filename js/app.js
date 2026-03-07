@@ -78,8 +78,8 @@ const renderSidebar = () => {
   sidebar.innerHTML = `
     <div class="logo">
       <div class="logo-icon">⚡</div>
-      <div class="logo-text">Multi-Agent<span class="beta-badge">BETA</span></div>
-      <div class="logo-sub">Studio</div>
+      <div class="logo-text">Marketing<span class="beta-badge">BETA</span></div>
+      <div class="logo-sub">Agent Studio</div>
     </div>
     ${navHTML}
     ${tokenHTML}

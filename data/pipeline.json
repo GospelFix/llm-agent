@@ -1,13 +1,13 @@
 {
   "pipeline": {
     "id": "default",
-    "name": "MVP 개발 파이프라인",
-    "description": "아이디어 → PRD → 디자인 → 기술스펙 → 테스트계획",
+    "name": "마케팅 크리에이티브 파이프라인",
+    "description": "브리프 → 브랜드 전략 → 카피 덱 → 비주얼 브리프 → 콘텐츠 계획",
     "steps": [
-      { "agentId": "pm",       "order": 1, "inputContext": [],                                "outputFile": "prd" },
-      { "agentId": "designer", "order": 2, "inputContext": ["prd"],                           "outputFile": "design" },
-      { "agentId": "dev",      "order": 3, "inputContext": ["prd", "design"],                 "outputFile": "tech_spec" },
-      { "agentId": "qa",       "order": 4, "inputContext": ["prd", "design", "tech_spec"],    "outputFile": "test_plan" }
+      { "agentId": "strategist",      "order": 1, "inputContext": [],                                                    "outputFile": "brand_strategy" },
+      { "agentId": "copywriter",      "order": 2, "inputContext": ["brand_strategy"],                                    "outputFile": "copy_deck" },
+      { "agentId": "art_director",    "order": 3, "inputContext": ["brand_strategy", "copy_deck"],                       "outputFile": "visual_brief" },
+      { "agentId": "content_planner", "order": 4, "inputContext": ["brand_strategy", "copy_deck", "visual_brief"],       "outputFile": "content_plan" }
     ]
   }
 }

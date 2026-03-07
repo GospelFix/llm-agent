@@ -3,13 +3,103 @@
    에이전트 스텝, 커넥터, 실행 결과, 토큰 바
    ======================================== */
 
-/* ─── 사용자 입력 카드 ─── */
+/* ─── AI 연결 설정 카드 ─── */
+.api-key-card {
+  margin-bottom: 12px;
+}
+
+.api-key-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.api-key-input {
+  flex: 1;
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+}
+
+.api-key-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.api-key-status.connected {
+  color: var(--accent-dev);
+}
+
+.api-key-status.disconnected {
+  color: var(--text-dim);
+}
+
+/* ─── 브리프 입력 카드 ─── */
 .user-input-card {
+  margin-bottom: 12px;
+}
+
+/* ─── 클라이언트 브랜드 가이드라인 카드 ─── */
+.brand-info-card {
   margin-bottom: 16px;
+}
+
+.brand-info-body {
+  padding-top: 12px;
+}
+
+.brand-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .brand-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.brand-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.brand-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.brand-input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.brand-input:focus {
+  border-color: var(--accent-design);
+}
+
+.brand-input::placeholder {
+  color: var(--text-dim);
 }
 
 .user-input-textarea {
   width: 100%;
+  height: 300px;
   box-sizing: border-box;
   background: var(--surface-2);
   border: 1px solid var(--border);

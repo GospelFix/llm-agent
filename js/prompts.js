@@ -28,11 +28,12 @@ const getRankData = (agent, override) => {
 
 /* ─── 컨텍스트 변수 정의 ─── */
 const CONTEXT_VARS = [
-  { code: '{{user_input}}',  desc: '사용자 입력 내용' },
-  { code: '{{prd}}',         desc: 'PM이 작성한 PRD 전문' },
-  { code: '{{design}}',      desc: 'Designer가 작성한 디자인 명세' },
-  { code: '{{tech_spec}}',   desc: 'Dev가 작성한 기술 명세서' },
-  { code: '{{test_plan}}',   desc: 'QA가 작성한 테스트 계획' },
+  { code: '{{user_input}}',     desc: '프로젝트 요청 입력 내용' },
+  { code: '{{brand_info}}',     desc: '클라이언트 브랜드 가이드라인 (브랜드명·컬러·톤앤매너 등)' },
+  { code: '{{brand_strategy}}', desc: 'Strategist가 작성한 브랜드 전략서' },
+  { code: '{{copy_deck}}',      desc: 'Copywriter가 작성한 카피 덱' },
+  { code: '{{visual_brief}}',   desc: 'Art Director가 작성한 비주얼 브리프' },
+  { code: '{{content_plan}}',   desc: 'Content Planner가 작성한 콘텐츠 기획서' },
 ];
 
 /* ─── 초기화 ─── */

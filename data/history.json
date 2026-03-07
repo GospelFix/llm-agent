@@ -10,10 +10,10 @@
       "completedSteps": 4,
       "totalSteps": 4,
       "results": [
-        { "agentId": "pm",       "status": "done",    "duration": 3.2, "tokens": 1250, "outputId": "out-run001-pm" },
-        { "agentId": "designer", "status": "done",    "duration": 5.8, "tokens": 980,  "outputId": "out-run001-designer" },
-        { "agentId": "dev",      "status": "done",    "duration": 7.1, "tokens": 420,  "outputId": "out-run001-dev" },
-        { "agentId": "qa",       "status": "done",    "duration": 4.5, "tokens": 390,  "outputId": "out-run001-qa" }
+        { "agentId": "strategist",      "status": "done", "duration": 3.2, "tokens": 1250, "outputId": "out-run001-strategist" },
+        { "agentId": "copywriter",      "status": "done", "duration": 5.8, "tokens": 980,  "outputId": "out-run001-copywriter" },
+        { "agentId": "art_director",    "status": "done", "duration": 7.1, "tokens": 420,  "outputId": "out-run001-art_director" },
+        { "agentId": "content_planner", "status": "done", "duration": 4.5, "tokens": 390,  "outputId": "out-run001-content_planner" }
       ]
     },
     {
@@ -26,10 +26,10 @@
       "completedSteps": 4,
       "totalSteps": 4,
       "results": [
-        { "agentId": "pm",       "status": "done",    "duration": 3.8, "tokens": 1480, "outputId": "out-run002-pm" },
-        { "agentId": "designer", "status": "done",    "duration": 6.2, "tokens": 1100, "outputId": "out-run002-designer" },
-        { "agentId": "dev",      "status": "done",    "duration": 8.4, "tokens": 540,  "outputId": "out-run002-dev" },
-        { "agentId": "qa",       "status": "done",    "duration": 5.1, "tokens": 420,  "outputId": "out-run002-qa" }
+        { "agentId": "strategist",      "status": "done", "duration": 3.8, "tokens": 1480, "outputId": "out-run002-strategist" },
+        { "agentId": "copywriter",      "status": "done", "duration": 6.2, "tokens": 1100, "outputId": "out-run002-copywriter" },
+        { "agentId": "art_director",    "status": "done", "duration": 8.4, "tokens": 540,  "outputId": "out-run002-art_director" },
+        { "agentId": "content_planner", "status": "done", "duration": 5.1, "tokens": 420,  "outputId": "out-run002-content_planner" }
       ]
     }
   ]

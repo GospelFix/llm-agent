@@ -19,6 +19,11 @@ const init = async () => {
       fetchJSON('../data/outputs.json').then(d => d.outputs),
     ]);
 
+    /* localStorage에 저장된 이전 생성 결과물 앞에 병합 */
+    const stored = Store.get();
+    if (stored.generatedRuns?.length)    historyData = [...stored.generatedRuns,    ...historyData];
+    if (stored.generatedOutputs?.length) outputsData = [...stored.generatedOutputs, ...outputsData];
+
     renderFilePanel();
 
     /* URL 파라미터로 초기 선택 결정 */

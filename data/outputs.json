@@ -1,76 +1,76 @@
 {
   "outputs": [
     {
-      "id": "out-run001-pm",
+      "id": "out-run001-strategist",
       "runId": "run-001",
-      "agentId": "pm",
-      "fileName": "prd",
-      "label": "PRD 문서",
+      "agentId": "strategist",
+      "fileName": "brand_strategy",
+      "label": "브랜드 전략서",
       "createdAt": "2026-03-03T09:14:03Z",
-      "content": "# Product Requirements Document\n## 주식 실시간 알림 봇\n\n### 개요\n주식 실시간 알림 봇: React 대시보드 + Node.js 백엔드로 구성.\nNaver 금융(finance.naver.com)과 Daum 증권(finance.daum.net) 크롤링 API로 주식 현재가, 거래량 현황을 수집.\n\n### 핵심 기능\n1. **관심 종목 관리**\n   - 종목 코드/이름으로 검색 및 추가\n   - 최대 20개 종목 관리\n   - 매수/매도 목표가 설정\n\n2. **실시간 알림**\n   - 조건 충족 시 Telegram Bot API로 알림 발송\n   - 알림 히스토리 표시 (최근 100건)\n\n3. **대시보드**\n   - 현재가, 전일 대비 등락, 거래량 표시\n   - 차트 시각화 (일간/주간)\n\n### 기술 스택\n- **프론트엔드**: React (Vite + TypeScript)\n- **백엔드**: Node.js (Express + TypeScript)\n- **데이터베이스**: SQLite\n- **외부 API**: Telegram Bot API\n- **크롤링**: Naver 금융, Daum 증권\n\n### 비기능 요구사항\n- 알림 지연 시간: 최대 30초\n- 크롤링 주기: 5분\n- 동시 접속: 최대 10명\n- 모바일 반응형 지원\n\n### 사용자 스토리\n- 투자자로서, 목표가 도달 시 즉시 알림을 받고 싶다\n- 투자자로서, 여러 종목의 현황을 한 화면에서 보고 싶다\n- 투자자로서, 알림 이력을 확인하고 싶다"
+      "content": "# 브랜드 전략서\n## 해남 꿀고구마 캠페인\n\n### 브랜드 포지셔닝\n\"가족의 건강을 위한 자연의 선물\" — 산지직송 프리미엄 농산물 브랜드\n\n### 타겟 고객\n- **Primary**: 30~40대 건강에 관심 있는 주부/부모\n- **Secondary**: 20~30대 건강식을 추구하는 직장인\n\n### 핵심 메시지\n1. **자연 그대로** — 해남 황토밭에서 자란 무농약 고구마\n2. **과학적 품질** — 큐어링 숙성 공정으로 당도 보장\n3. **신뢰의 브랜드** — GAP 인증 + 산지직송\n\n### 경쟁사 포지셔닝\n- 대형마트 고구마: 저가/범용 → 우리: 프리미엄/신뢰\n- 타 온라인 농산물: 가격 경쟁 → 우리: 품질/스토리 차별화\n\n### 브랜드 USP\n베니하루카 품종 × 해남 황토 × 큐어링 숙성 **3중 차별화**"
     },
     {
-      "id": "out-run001-designer",
+      "id": "out-run001-copywriter",
       "runId": "run-001",
-      "agentId": "designer",
-      "fileName": "design",
-      "label": "디자인 명세",
+      "agentId": "copywriter",
+      "fileName": "copy_deck",
+      "label": "카피 덱",
       "createdAt": "2026-03-03T09:14:09Z",
-      "content": "# Design Specification\n## 주식 알림 봇 UI/UX\n\n### 화면 구조\n\n#### 1. 대시보드 (메인)\n```\n┌─────────────────────────────────┐\n│ 헤더: 로고 + 알림 아이콘          │\n├─────────────────────────────────┤\n│ 포트폴리오 요약 카드               │\n│ (총 평가금액, 수익률)              │\n├──────────┬──────────────────────┤\n│ 관심종목  │ 차트 영역              │\n│ 리스트    │                      │\n│           │                      │\n└──────────┴──────────────────────┘\n```\n\n#### 2. 종목 설정 모달\n- 종목 검색 (실시간)\n- 알림 조건 설정 (상한가/하한가)\n- 저장 버튼\n\n### 컴포넌트 명세\n\n#### StockCard\n- 종목명, 현재가, 등락률\n- 알림 활성화 토글\n- 색상: 상승=초록, 하락=빨강, 보합=회색\n\n#### AlertBadge\n- 미확인 알림 수 표시\n- 클릭 시 알림 패널 오픈\n\n### 디자인 토큰\n- Primary: #3B82F6 (Blue)\n- Success: #10B981 (Green)\n- Danger: #EF4444 (Red)\n- Background: #0F172A\n- Surface: #1E293B\n- Font: Inter, system-ui"
+      "content": "# 카피 덱\n## 해남 꿀고구마\n\n### 메인 슬로건\n**\"해남에서 온 달콤한 선물\"**\n\n### 헤드라인 3종 (A/B/C)\n- A. \"한 입에 반하는 단맛, 해남 베니하루카\"\n- B. \"우리 가족이 반한 고구마의 비밀\"\n- C. \"황토밭이 키운 자연 그대로의 달콤함\"\n\n### 서브카피\n- \"30일 큐어링 숙성으로 당도를 높인 프리미엄 고구마\"\n- \"GAP 인증 산지에서 24시간 내 직배송\"\n- \"첫사랑처럼 달콤한 베니하루카 고구마\"\n\n### CTA 문구\n\"지금 산지에서 직접 받아보세요 →\"\n\"한정 수량, 오늘 주문하면 내일 도착\""
     },
     {
-      "id": "out-run001-dev",
+      "id": "out-run001-art_director",
       "runId": "run-001",
-      "agentId": "dev",
-      "fileName": "tech_spec",
-      "label": "기술 명세서",
+      "agentId": "art_director",
+      "fileName": "visual_brief",
+      "label": "비주얼 브리프",
       "createdAt": "2026-03-03T09:14:16Z",
-      "content": "# Technical Specification\n## 주식 알림 봇\n\n### 아키텍처\n\n```\n[React Frontend] ←HTTP/WS→ [Express Backend] ←→ [SQLite DB]\n                                    ↓\n                             [Cron Scheduler]\n                                    ↓\n                          [Naver/Daum Crawler]\n                                    ↓\n                          [Telegram Bot API]\n```\n\n### API 설계\n\n#### GET /api/stocks\n관심 종목 목록 조회\n```json\n{ \"stocks\": [{ \"code\": \"005930\", \"name\": \"삼성전자\", \"alertHigh\": 80000, \"alertLow\": 60000 }] }\n```\n\n#### POST /api/stocks\n종목 추가\n```json\n{ \"code\": \"005930\", \"alertHigh\": 80000, \"alertLow\": 60000 }\n```\n\n#### GET /api/alerts\n알림 히스토리 조회\n```json\n{ \"alerts\": [{ \"id\": 1, \"stockCode\": \"005930\", \"type\": \"HIGH\", \"price\": 80500, \"at\": \"2026-03-03T09:00:00Z\" }] }\n```\n\n### 데이터베이스 스키마\n\n```sql\nCREATE TABLE stocks (\n  id INTEGER PRIMARY KEY,\n  code TEXT NOT NULL UNIQUE,\n  name TEXT NOT NULL,\n  alert_high REAL,\n  alert_low REAL,\n  created_at DATETIME DEFAULT CURRENT_TIMESTAMP\n);\n\nCREATE TABLE alerts (\n  id INTEGER PRIMARY KEY,\n  stock_code TEXT NOT NULL,\n  type TEXT CHECK(type IN ('HIGH', 'LOW')),\n  price REAL NOT NULL,\n  triggered_at DATETIME DEFAULT CURRENT_TIMESTAMP\n);\n```\n\n### 크롤링 모듈\n- cron: 5분마다 실행\n- 대상: Naver 금융 API (비공식)\n- 에러 처리: 3회 재시도 후 skip\n- Rate limit: 요청 간 1초 딜레이"
+      "content": "# 비주얼 브리프\n## 해남 꿀고구마 캠페인\n\n### 컬러 팔레트\n- Primary:   #8B4513  (새들 브라운 — 고구마 껍질)\n- Secondary: #D2691E  (초콜릿 — 따뜻한 강조색)\n- Accent:    #F4A460  (샌디 브라운 — 소프트 포인트)\n- Background:#FFF8F0  (크림 화이트 — 깨끗한 배경)\n- Text:      #3D2B1F  (다크 브라운 — 본문)\n\n### 타이포그래피\n- 헤드라인: Noto Serif KR Bold / 36~48px\n- 본문: Noto Sans KR Regular / 16px / 행간 1.8\n- 강조: #D2691E + Bold 처리\n\n### 이미지 무드보드\n- 자연광 + 따뜻한 주황 계열 배경\n- 나무 바구니/황토 소품 활용\n- 농부/산지 다큐 스타일 컷 혼용\n\n### 레이아웃 그리드\n- 히어로: 풀 블리드 이미지 + 중앙 텍스트 오버레이\n- 카드 그리드: 3열 (PC) / 1열 (모바일)"
     },
     {
-      "id": "out-run001-qa",
+      "id": "out-run001-content_planner",
       "runId": "run-001",
-      "agentId": "qa",
-      "fileName": "test_plan",
-      "label": "테스트 계획",
+      "agentId": "content_planner",
+      "fileName": "content_plan",
+      "label": "콘텐츠 기획서",
       "createdAt": "2026-03-03T09:14:21Z",
-      "content": "# Test Plan\n## 주식 알림 봇\n\n### 테스트 범위\n전체 시스템 E2E 및 단위 테스트\n\n### 기능 테스트 시나리오\n\n#### TC-001: 종목 추가\n1. 검색창에 '삼성전자' 입력\n2. 검색 결과에서 선택\n3. 상한가 80,000원, 하한가 60,000원 설정\n4. 저장 클릭\n5. **예상**: 목록에 삼성전자 추가됨\n\n#### TC-002: 알림 발송\n1. 종목 현재가가 상한가 초과 시\n2. **예상**: Telegram으로 알림 수신 (30초 내)\n\n#### TC-003: 중복 종목 추가 방지\n1. 이미 등록된 종목 코드로 추가 시도\n2. **예상**: 에러 메시지 표시\n\n### 엣지케이스\n- 네트워크 오류 시 크롤링 재시도\n- Telegram API 다운 시 알림 큐잉\n- SQLite 동시 쓰기 충돌 처리\n- 장 마감 시간대 크롤링 동작\n\n### 성능 테스트\n- 20개 종목 동시 크롤링: 10초 내 완료\n- 10명 동시 접속: 응답시간 2초 이하\n- 메모리 누수 여부: 24시간 연속 실행 후 확인\n\n### 자동화 도구\n- 단위: Jest + Supertest\n- E2E: Playwright\n- 성능: k6"
+      "content": "# 콘텐츠 기획서\n## 해남 꿀고구마 4주 SNS 캘린더\n\n### 채널 전략\n- **인스타그램**: 비주얼 중심 피드 + 릴스\n- **카카오채널**: 프로모션 + 배송 안내\n- **네이버 블로그**: SEO 롱폼 + 레시피\n\n### 주차별 테마\n**1주차 — 브랜드 소개**\n- Mon: 브랜드 론칭 히어로 포스트\n- Wed: 해남 산지 스토리 릴스\n- Fri: 베니하루카 품종 소개 카드\n\n**2주차 — 품질 신뢰**\n- Mon: 큐어링 공정 인포그래픽\n- Wed: GAP 인증 인증서 포스트\n- Fri: 당도 비교 실험 릴스\n\n**3주차 — 고객 공감**\n- Mon: 가족 레시피 (군고구마/맛탕)\n- Wed: 고객 후기 UGC 리그램\n- Fri: 건강 효능 카드뉴스\n\n**4주차 — 구매 유도 CTA**\n- Mon: 한정 할인 프로모션\n- Wed: 무료배송 이벤트 공지\n- Fri: 재구매 감사 리뷰 이벤트\n\n### 주요 해시태그\n#해남꿀고구마 #베니하루카 #산지직송 #건강간식 #꿀고구마"
     },
     {
-      "id": "out-run002-pm",
+      "id": "out-run002-strategist",
       "runId": "run-002",
-      "agentId": "pm",
-      "fileName": "prd",
-      "label": "PRD 문서 (2차)",
+      "agentId": "strategist",
+      "fileName": "brand_strategy",
+      "label": "브랜드 전략서 (2차)",
       "createdAt": "2026-03-03T10:30:04Z",
-      "content": "# Product Requirements Document v2\n## 주식 실시간 알림 봇 — 2차 개선\n\n### 1차 피드백 반영 사항\n- 알림 채널 확장: Telegram → Telegram + Discord + Email\n- 포트폴리오 수익률 추적 기능 추가\n- 다중 계정(멀티 유저) 지원\n\n### 추가 기능\n1. **멀티 채널 알림**\n   - Telegram, Discord Webhook, SMTP 이메일\n   - 채널별 알림 조건 분리 설정\n\n2. **포트폴리오 트래킹**\n   - 보유 종목/수량/매수가 입력\n   - 실시간 수익률 계산\n   - 손익 차트 (일간/월간)\n\n3. **사용자 계정**\n   - JWT 기반 인증\n   - 최대 5명 멀티 유저\n\n### 우선순위 (MoSCoW)\n- **Must**: 핵심 알림 + 관심종목\n- **Should**: 포트폴리오 트래킹\n- **Could**: 멀티 유저\n- **Won't**: 실제 매매 연동 (v1)"
+      "content": "# 브랜드 전략서 v2\n## 해남 꿀고구마 — 시즌 캠페인 확장\n\n### 1차 피드백 반영 사항\n- 타겟 연령 확장: 20~50대로 범위 확장\n- 건강 트렌드 연계: 저GI 식품 포지셔닝 추가\n- B2B 채널 확장: 카페/디저트 사업체 대상 홀세일 메시지 추가\n\n### 확장 포지셔닝\n- **B2C**: 가족 건강식 프리미엄 농산물\n- **B2B**: 카페/베이커리 납품용 프리미엄 식재료\n\n### 시즌 메시지\n겨울 시즌: \"따뜻한 한 입, 가족이 모이는 시간\"\n봄 시즌: \"새 학기 아이들 간식, 믿을 수 있는 선택\""
     },
     {
-      "id": "out-run002-designer",
+      "id": "out-run002-copywriter",
       "runId": "run-002",
-      "agentId": "designer",
-      "fileName": "design",
-      "label": "디자인 명세 (2차)",
+      "agentId": "copywriter",
+      "fileName": "copy_deck",
+      "label": "카피 덱 (2차)",
       "createdAt": "2026-03-03T10:30:10Z",
-      "content": "# Design Specification v2\n\n### 변경 사항\n- 알림 채널 설정 UI 추가\n- 포트폴리오 뷰 신규 화면\n\n### 알림 채널 설정 화면\n탭 구조: [Telegram] [Discord] [Email]\n각 탭에서 연결/해제 + 테스트 발송 버튼\n\n### 포트폴리오 화면\n- 총 평가금액, 총 수익률 헤더 카드\n- 종목별 보유 현황 테이블\n- 수익/손실 파이 차트"
+      "content": "# 카피 덱 v2\n\n### 추가 헤드라인 — B2B\n- \"카페 메뉴의 품격을 올리는 해남 꿀고구마\"\n- \"100% 국산 베니하루카, 디저트의 새 기준\"\n\n### 계절 한정 카피\n- 겨울: \"눈 내리는 날, 따끈한 꿀고구마 한 봉지\"\n- 봄: \"새학기 도시락 레시피, 꿀고구마 반찬\"\n\n### 리타겟팅 카피\n- \"지난번에 드셔보셨나요? 이번엔 더 달아졌어요\"\n- \"재구매율 87% — 한 번 먹으면 또 찾게 됩니다\""
     },
     {
-      "id": "out-run002-dev",
+      "id": "out-run002-art_director",
       "runId": "run-002",
-      "agentId": "dev",
-      "fileName": "tech_spec",
-      "label": "기술 명세서 (2차)",
+      "agentId": "art_director",
+      "fileName": "visual_brief",
+      "label": "비주얼 브리프 (2차)",
       "createdAt": "2026-03-03T10:30:18Z",
-      "content": "# Technical Specification v2\n\n### 추가 API\n\n#### POST /api/notifications/test\n알림 채널 테스트 발송\n\n#### GET /api/portfolio\n포트폴리오 현황 조회\n\n### 스키마 추가\n```sql\nCREATE TABLE portfolio (\n  id INTEGER PRIMARY KEY,\n  user_id INTEGER,\n  stock_code TEXT,\n  quantity INTEGER,\n  buy_price REAL,\n  bought_at DATETIME\n);\n\nCREATE TABLE notification_channels (\n  id INTEGER PRIMARY KEY,\n  user_id INTEGER,\n  type TEXT CHECK(type IN ('telegram', 'discord', 'email')),\n  config TEXT -- JSON\n);\n```"
+      "content": "# 비주얼 브리프 v2\n\n### B2B 비주얼 추가\n- 카페 감성 플랫레이: 화이트 마블 배경 + 고구마 컷\n- 고급 포장박스 목업 이미지\n- 셰프/바리스타가 활용하는 푸드스타일링 사진\n\n### 계절 비주얼 가이드\n- 겨울: 따뜻한 앰버 톤 + 스팀 연출\n- 봄: 밝은 파스텔 배경 + 도시락 컨셉"
     },
     {
-      "id": "out-run002-qa",
+      "id": "out-run002-content_planner",
       "runId": "run-002",
-      "agentId": "qa",
-      "fileName": "test_plan",
-      "label": "테스트 계획 (2차)",
+      "agentId": "content_planner",
+      "fileName": "content_plan",
+      "label": "콘텐츠 기획서 (2차)",
       "createdAt": "2026-03-03T10:30:23Z",
-      "content": "# Test Plan v2\n\n### 추가 테스트 케이스\n\n#### TC-010: 다중 알림 채널 동시 발송\n1. Telegram + Discord 모두 설정\n2. 조건 충족\n3. **예상**: 두 채널 모두 알림 수신\n\n#### TC-011: 포트폴리오 수익률 계산\n1. 삼성전자 10주, 매수가 75,000원\n2. 현재가 80,000원 조회\n3. **예상**: 수익률 +6.67% 표시\n\n### 회귀 테스트\n- v1 기능 전체 TC-001 ~ TC-009 재실행"
+      "content": "# 콘텐츠 기획서 v2\n\n### 추가 채널 — 유튜브 쇼츠\n- 주 1회 60초 레시피 영상\n- 산지 방문 브이로그 월 1회\n\n### B2B 콘텐츠 추가\n- 카페 납품 사례 인터뷰 포스트\n- 메뉴 개발 협업 스토리\n\n### 성과 지표 (KPI)\n- 인스타 팔로워: +500/월\n- 링크 클릭률: 3% 이상\n- 주문 전환율: 2% 이상"
     }
   ]
 }

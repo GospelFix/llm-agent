@@ -53,6 +53,11 @@ const init = async () => {
       fetchJSON('./data/outputs.json').then(d => d.outputs),
     ]);
 
+    /* localStorage에 저장된 이전 생성 결과물 앞에 병합 */
+    const stored = Store.get();
+    if (stored.generatedRuns?.length)    historyData    = [...stored.generatedRuns,    ...historyData];
+    if (stored.generatedOutputs?.length) outputsData    = [...stored.generatedOutputs, ...outputsData];
+
     renderAll();
   } catch (e) {
     console.error('데이터 로드 실패:', e);
@@ -423,24 +428,72 @@ const renderOutputPreview = (outputId, agentId) => {
   }
 };
 
-/* ─── 실행 시뮬레이션 ─── */
+/* ─── 실제 Claude API 호출 ─── */
+const callClaudeAPI = async (prompt, model, apiKey) => {
+  const claudeModel = model && model.startsWith('claude') ? model : 'claude-haiku-4-5-20251001';
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: claudeModel,
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API ${res.status}`);
+  }
+  const data = await res.json();
+  return {
+    text:   data.content[0].text,
+    tokens: (data.usage.input_tokens || 0) + (data.usage.output_tokens || 0),
+  };
+};
+
+/* ─── 입력값 기반 템플릿 아웃풋 (API 키 없을 때) ─── */
+const buildTemplateOutput = (agent, userInput, brandInfo, collectedOutputs) => {
+  const brand  = brandInfo.brandName      || '클라이언트';
+  const tone   = brandInfo.toneAndManner  || '미입력';
+  const target = brandInfo.targetAudience || '미입력';
+  const colors = brandInfo.brandColors    || '미입력';
+  const slogan = brandInfo.slogan         || '미입력';
+  const rivals = brandInfo.competitors    || '미입력';
+  const notice = '\n\n> ⚡ **AI 연결 설정**에 API 키를 입력하면 실제 AI가 이 내용을 채워드립니다.';
+
+  switch (agent.id) {
+    case 'strategist':
+      return `# 브랜드 전략서\n## ${brand}\n\n### 프로젝트 요청\n${userInput || '(없음)'}\n\n### 브랜드 가이드라인\n- 슬로건: ${slogan}\n- 컬러: ${colors}\n- 톤앤매너: ${tone}\n- 타겟: ${target}\n- 경쟁사: ${rivals}\n\n### 포지셔닝 전략\n- USP: [AI가 채웁니다]\n- 핵심 메시지: [AI가 채웁니다]\n- 타겟 인사이트: [AI가 채웁니다]${notice}`;
+    case 'copywriter':
+      return `# 카피 덱\n## ${brand}\n\n### 프로젝트 요청\n${userInput || '(없음)'}\n\n### 슬로건: ${slogan}\n\n### 헤드라인 3종\n- A. [AI가 채웁니다]\n- B. [AI가 채웁니다]\n- C. [AI가 채웁니다]\n\n### 서브카피\n- [AI가 채웁니다]\n\n### CTA\n- [AI가 채웁니다]${notice}`;
+    case 'art_director':
+      return `# 비주얼 브리프\n## ${brand}\n\n### 컬러 가이드\n${colors}\n\n### 톤앤매너\n${tone}\n\n### 비주얼 방향성\n- 이미지 무드: [AI가 채웁니다]\n- 타이포그래피: [AI가 채웁니다]\n- 레이아웃: [AI가 채웁니다]${notice}`;
+    case 'content_planner':
+      return `# 콘텐츠 기획서\n## ${brand}\n\n### 타겟\n${target}\n\n### 4주 콘텐츠 캘린더\n- 1주차: [AI가 채웁니다]\n- 2주차: [AI가 채웁니다]\n- 3주차: [AI가 채웁니다]\n- 4주차: [AI가 채웁니다]\n\n### 채널 전략\n- [AI가 채웁니다]${notice}`;
+    default:
+      return `# ${agent.name} 결과물\n## ${brand}\n\n### 요청\n${userInput || '(없음)'}${notice}`;
+  }
+};
+
+/* ─── 파이프라인 실행 ─── */
 const simulateRun = async (startAgentId) => {
   if (isRunning) return;
   isRunning = true;
 
-  const runBtn = document.getElementById('run-btn-header');
+  const runBtn     = document.getElementById('run-btn-header');
   const runBtnCard = document.getElementById('run-btn-card');
-  if (runBtn) { runBtn.disabled = true; runBtn.textContent = '⏳ 실행 중...'; }
+  if (runBtn)     { runBtn.disabled = true;     runBtn.textContent = '⏳ 실행 중...'; }
   if (runBtnCard) { runBtnCard.disabled = true; runBtnCard.innerHTML = '<span>⏳</span> 실행 중...'; }
 
-  /* 시작 인덱스 결정 */
-  const startIdx = startAgentId
-    ? agentsData.findIndex(a => a.id === startAgentId)
-    : 0;
+  const startIdx = startAgentId ? agentsData.findIndex(a => a.id === startAgentId) : 0;
 
-  /* 새 실행 레코드 생성 */
   const newRun = {
-    id: `run-sim-${Date.now()}`,
+    id: `run-${Date.now()}`,
     label: `${historyData.length + 1}차 실행`,
     status: 'running',
     createdAt: new Date().toISOString(),
@@ -462,90 +515,129 @@ const simulateRun = async (startAgentId) => {
   renderRunPanel();
   renderPipelineSteps();
 
-  /* ── 크레딧 사전 체크 ── */
+  /* 크레딧 사전 체크 (API 키 없을 때만) */
   const preState = Store.get();
-  const requiredCredits = agentsData.slice(startIdx).reduce((sum, agent) => {
-    const rankLabel = getAgentRankLabel(agent, preState);
-    return sum + calcCredits(RANK_TOKEN_LIMITS[rankLabel] || 2000);
-  }, 0);
+  const apiKey   = preState.apiKey || '';
 
-  if (preState.tokenBalance < requiredCredits) {
-    alert(`크레딧이 부족합니다.\n필요: ${requiredCredits} 크레딧 / 잔여: ${preState.tokenBalance} 크레딧`);
-    isRunning = false;
-    if (runBtn) { runBtn.disabled = false; runBtn.textContent = '▶ 전체 실행'; }
-    if (runBtnCard) { runBtnCard.disabled = false; runBtnCard.innerHTML = '<span>▶</span> 실행 중'; }
-    return;
+  if (!apiKey) {
+    const requiredCredits = agentsData.slice(startIdx).reduce((sum, agent) => {
+      return sum + calcCredits(RANK_TOKEN_LIMITS[getAgentRankLabel(agent, preState)] || 2000);
+    }, 0);
+    if (preState.tokenBalance < requiredCredits) {
+      alert(`크레딧이 부족합니다.\n필요: ${requiredCredits} 크레딧 / 잔여: ${preState.tokenBalance} 크레딧`);
+      isRunning = false;
+      if (runBtn)     { runBtn.disabled = false;     runBtn.textContent = '▶ 전체 실행'; }
+      if (runBtnCard) { runBtnCard.disabled = false; runBtnCard.innerHTML = '<span>▶</span> 실행 중'; }
+      return;
+    }
   }
 
-  /* 사용자 입력 + 이전 스텝 출력 수집 컨텍스트 초기화 */
   const userInput = Store.get().userInput || '';
+  const brandInfo = Store.get().brandInfo || {};
   const collectedOutputs = {};
+  const newRunOutputs    = [];
 
-  /* startIdx > 0인 경우: 이미 완료된 스텝의 outputs 사전 수집 */
+  /* startIdx > 0이면 이전 스텝 아웃풋 사전 수집 */
   agentsData.slice(0, startIdx).forEach(agent => {
     const existing = outputsData.find(o => o.agentId === agent.id);
     if (existing) collectedOutputs[agent.outputFile] = existing.content;
   });
 
-  /* 각 에이전트를 순서대로 시뮬레이션 */
   for (let i = startIdx; i < agentsData.length; i++) {
     const agent = agentsData[i];
 
-    /* 이 에이전트의 프롬프트를 resolve ({{변수}} → 실제 값) */
-    const state = Store.get();
-    const override = state.agentOverrides[agent.id] || {};
-    const rawPrompt = state.promptOverrides[agent.id]
-      ?? override.systemPrompt
-      ?? agent.systemPrompt
-      ?? '';
-    const resolvedPrompt = resolvePrompt(rawPrompt, userInput, collectedOutputs);
+    const state       = Store.get();
+    const override    = state.agentOverrides[agent.id] || {};
+    const rawPrompt   = state.promptOverrides[agent.id] ?? override.systemPrompt ?? agent.systemPrompt ?? '';
+    const resolvedPrompt = resolvePrompt(rawPrompt, userInput, brandInfo, collectedOutputs);
 
-    newRun.results[i].status = 'running';
+    newRun.results[i].status         = 'running';
     newRun.results[i].resolvedPrompt = resolvedPrompt;
     Store.set({ activeRunStep: agent.id, pipelineStatus: 'running' });
     renderRunPanel();
     renderPipelineSteps();
 
-    /* 2~4초 랜덤 딜레이로 실행 시뮬레이션 */
-    const duration = 2 + Math.random() * 2;
-    await delay(duration * 1000);
+    let generatedContent = '';
+    let tokens = 0;
+    const t0 = Date.now();
 
-    /* 직급 기반 토큰 시뮬레이션 (직급 한도의 60~100%) */
-    const rankLabel = getAgentRankLabel(agent, Store.get());
-    const tokenLimit = RANK_TOKEN_LIMITS[rankLabel] || 2000;
-    const tokens = Math.floor(tokenLimit * (0.6 + Math.random() * 0.4));
-    const usedCredits = calcCredits(tokens);
+    if (apiKey) {
+      /* ── 실제 AI 생성 ── */
+      try {
+        const result    = await callClaudeAPI(resolvedPrompt, agent.model, apiKey);
+        generatedContent = result.text;
+        tokens           = result.tokens;
+      } catch (err) {
+        console.error(`${agent.name} API 오류:`, err);
+        generatedContent = `❌ 생성 실패 (${agent.name})\n\n오류: ${err.message}`;
+        tokens = 0;
+      }
+    } else {
+      /* ── 목업 시뮬레이션 ── */
+      const mockDuration = 2 + Math.random() * 2;
+      await delay(mockDuration * 1000);
+      const rankLabel  = getAgentRankLabel(agent, Store.get());
+      const tokenLimit = RANK_TOKEN_LIMITS[rankLabel] || 2000;
+      tokens           = Math.floor(tokenLimit * (0.6 + Math.random() * 0.4));
 
-    newRun.results[i].status = 'done';
-    newRun.results[i].duration = parseFloat(duration.toFixed(1));
-    newRun.results[i].tokens = tokens;
-    newRun.results[i].credits = usedCredits;
-    newRun.completedSteps = i + 1;
-    newRun.totalTokens += tokens;
+      const hasInput = userInput.trim() || brandInfo.brandName?.trim();
+      if (hasInput) {
+        generatedContent = buildTemplateOutput(agent, userInput, brandInfo, collectedOutputs);
+      } else {
+        const simOutput  = outputsData.find(o => o.agentId === agent.id);
+        generatedContent = simOutput?.content || `(${agent.name} 예시 없음)`;
+      }
+    }
 
-    /* 크레딧 차감 */
+    const duration    = parseFloat(((Date.now() - t0) / 1000).toFixed(1));
+    const usedCredits = calcCredits(tokens || 100);
+
+    /* 아웃풋 레코드 생성 및 runtime 배열 추가 */
+    const outputRecord = {
+      id:        `out-${newRun.id}-${agent.id}`,
+      runId:     newRun.id,
+      agentId:   agent.id,
+      fileName:  agent.outputFile,
+      label:     agent.desc,
+      createdAt: new Date().toISOString(),
+      content:   generatedContent,
+    };
+    outputsData.push(outputRecord);
+    newRunOutputs.push(outputRecord);
+    collectedOutputs[agent.outputFile] = generatedContent;
+
+    newRun.results[i].status   = 'done';
+    newRun.results[i].duration = duration;
+    newRun.results[i].tokens   = tokens;
+    newRun.results[i].credits  = usedCredits;
+    newRun.results[i].outputId = outputRecord.id;
+    newRun.completedSteps      = i + 1;
+    newRun.totalTokens        += tokens;
+
     const afterState = Store.get();
     Store.set({ tokenBalance: Math.max(0, afterState.tokenBalance - usedCredits) });
     updateTokenDisplay();
-
-    /* 이 에이전트의 출력을 다음 에이전트가 참조할 수 있도록 수집 */
-    const simOutput = outputsData.find(o => o.agentId === agent.id);
-    if (simOutput) collectedOutputs[agent.outputFile] = simOutput.content;
 
     renderRunPanel();
     renderPipelineSteps();
   }
 
-  /* 전체 완료 */
-  newRun.status = 'completed';
+  newRun.status      = 'completed';
   newRun.completedAt = new Date().toISOString();
   Store.set({ activeRunStep: null, pipelineStatus: 'completed' });
+
+  /* 생성 결과물 localStorage 영속 저장 */
+  const st = Store.get();
+  Store.set({
+    generatedRuns:    [newRun,          ...(st.generatedRuns    || [])],
+    generatedOutputs: [...newRunOutputs, ...(st.generatedOutputs || [])],
+  });
 
   renderRunPanel();
   renderPipelineSteps();
 
   isRunning = false;
-  if (runBtn) { runBtn.disabled = false; runBtn.textContent = '▶ 전체 실행'; }
+  if (runBtn)     { runBtn.disabled = false;     runBtn.textContent = '▶ 전체 실행'; }
   if (runBtnCard) { runBtnCard.disabled = false; runBtnCard.innerHTML = '<span>▶</span> 실행 중'; }
 };
 
@@ -554,14 +646,29 @@ const startNewRun = () => {
   if (!isRunning) simulateRun();
 };
 
+/** brandInfo 객체를 프롬프트 주입용 텍스트로 변환 */
+const formatBrandInfo = (brandInfo) => {
+  if (!brandInfo) return '(브랜드 정보 미입력)';
+  const fields = [
+    brandInfo.brandName    ? `브랜드명: ${brandInfo.brandName}` : null,
+    brandInfo.slogan       ? `슬로건: ${brandInfo.slogan}` : null,
+    brandInfo.brandColors  ? `브랜드 컬러: ${brandInfo.brandColors}` : null,
+    brandInfo.toneAndManner? `톤앤매너: ${brandInfo.toneAndManner}` : null,
+    brandInfo.targetAudience? `타겟 고객: ${brandInfo.targetAudience}` : null,
+    brandInfo.competitors  ? `경쟁사: ${brandInfo.competitors}` : null,
+  ].filter(Boolean);
+  return fields.length > 0 ? fields.join('\n') : '(브랜드 정보 미입력)';
+};
+
 /** {{변수}}를 실제 값으로 치환 */
-const resolvePrompt = (prompt, userInput, collectedOutputs) => {
+const resolvePrompt = (prompt, userInput, brandInfo, collectedOutputs) => {
   return prompt
-    .replace(/\{\{user_input\}\}/g, userInput              || '(사용자 입력 없음)')
-    .replace(/\{\{prd\}\}/g,        collectedOutputs.prd       || '(PRD 미생성)')
-    .replace(/\{\{design\}\}/g,     collectedOutputs.design    || '(디자인 명세 미생성)')
-    .replace(/\{\{tech_spec\}\}/g,  collectedOutputs.tech_spec || '(기술 명세 미생성)')
-    .replace(/\{\{test_plan\}\}/g,  collectedOutputs.test_plan || '(테스트 계획 미생성)');
+    .replace(/\{\{user_input\}\}/g,      userInput || '(요청 없음)')
+    .replace(/\{\{brand_info\}\}/g,      formatBrandInfo(brandInfo))
+    .replace(/\{\{brand_strategy\}\}/g,  collectedOutputs.brand_strategy  || '(브랜드 전략서 미생성)')
+    .replace(/\{\{copy_deck\}\}/g,       collectedOutputs.copy_deck        || '(카피 덱 미생성)')
+    .replace(/\{\{visual_brief\}\}/g,    collectedOutputs.visual_brief     || '(비주얼 브리프 미생성)')
+    .replace(/\{\{content_plan\}\}/g,    collectedOutputs.content_plan     || '(콘텐츠 기획서 미생성)');
 };
 
 /** Promise 기반 딜레이 헬퍼 */
@@ -575,13 +682,79 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('run-btn-header')?.addEventListener('click', () => simulateRun());
   document.getElementById('run-btn-card')?.addEventListener('click', () => simulateRun());
 
-  /* 사용자 입력 → Store 저장 ({{user_input}} 변수 소스) */
+  /* 프로젝트 요청 입력 → Store 저장 ({{user_input}} 변수 소스) */
   const userInputArea = document.getElementById('user-input-area');
   if (userInputArea) {
-    /* 저장된 값 복원 */
     userInputArea.value = Store.get().userInput || '';
     userInputArea.addEventListener('input', () => {
       Store.set({ userInput: userInputArea.value });
     });
   }
+
+  /* 브랜드 가이드라인 입력 → Store 저장 ({{brand_info}} 변수 소스) */
+  const brandFields = [
+    { id: 'brand-name',        key: 'brandName' },
+    { id: 'brand-slogan',      key: 'slogan' },
+    { id: 'brand-colors',      key: 'brandColors' },
+    { id: 'brand-tone',        key: 'toneAndManner' },
+    { id: 'brand-target',      key: 'targetAudience' },
+    { id: 'brand-competitors', key: 'competitors' },
+  ];
+
+  const savedBrand = Store.get().brandInfo || {};
+  brandFields.forEach(({ id, key }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = savedBrand[key] || '';
+    el.addEventListener('input', () => {
+      const current = Store.get().brandInfo || {};
+      Store.set({ brandInfo: { ...current, [key]: el.value } });
+    });
+  });
+
+  /* 브랜드 가이드라인 카드 펼치기/접기 토글 */
+  const toggleBtn = document.getElementById('brand-info-toggle');
+  const brandBody = document.getElementById('brand-info-body');
+  if (toggleBtn && brandBody) {
+    toggleBtn.addEventListener('click', () => {
+      const isOpen = brandBody.style.display !== 'none';
+      brandBody.style.display = isOpen ? 'none' : 'block';
+      toggleBtn.textContent = isOpen ? '펼치기 ▾' : '접기 ▴';
+      toggleBtn.setAttribute('aria-expanded', String(!isOpen));
+    });
+  }
+
+  /* API 키 UI 초기화 */
+  updateApiKeyUI();
+
+  /* API 키 저장 버튼 */
+  document.getElementById('api-key-save-btn')?.addEventListener('click', () => {
+    const input = document.getElementById('api-key-input');
+    if (!input) return;
+    const key = input.value.trim();
+    Store.set({ apiKey: key });
+    updateApiKeyUI();
+    input.value = '';
+  });
+
+  /* API 키 삭제 버튼 */
+  document.getElementById('api-key-clear-btn')?.addEventListener('click', () => {
+    Store.set({ apiKey: '' });
+    updateApiKeyUI();
+  });
 });
+
+/** API 키 상태 UI 업데이트 */
+const updateApiKeyUI = () => {
+  const statusEl   = document.getElementById('api-key-status');
+  const clearBtn   = document.getElementById('api-key-clear-btn');
+  const inputEl    = document.getElementById('api-key-input');
+  const hasKey     = !!(Store.get().apiKey);
+
+  if (statusEl) {
+    statusEl.className = `api-key-status ${hasKey ? 'connected' : 'disconnected'}`;
+    statusEl.textContent = hasKey ? '● AI 연결됨' : '○ 미연결 (목업 모드)';
+  }
+  if (clearBtn) clearBtn.style.display = hasKey ? 'inline-flex' : 'none';
+  if (inputEl)  inputEl.placeholder    = hasKey ? '새 키로 교체하려면 입력...' : 'sk-ant-api03-...';
+};

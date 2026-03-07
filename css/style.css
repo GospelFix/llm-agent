@@ -7,25 +7,28 @@
 
 /* ─── CSS 변수 ─── */
 :root {
-  --bg: #0a0a0f;
-  --surface: #111118;
-  --surface2: #1a1a24;
-  --border: #2a2a3a;
-  --border-bright: #3a3a55;
-  --text: #e8e8f0;
-  --text-muted: #6b6b88;
-  --text-dim: #3d3d55;
+  /* ─── 라이트 테마 배경/표면 ─── */
+  --bg: #f4f4f8;
+  --surface: #ffffff;
+  --surface2: #ededf3;
+  --border: #dddde8;
+  --border-bright: #c2c2d8;
+  --text: #141420;
+  --text-muted: #5a5a75;
+  --text-dim: #9898b0;
 
-  --accent-pm: #f5a623;
-  --accent-dev: #4ade80;
-  --accent-design: #a78bfa;
-  --accent-qa: #60a5fa;
-  --accent-pipe: #fb7185;
+  /* ─── 액센트 — 라이트 배경 명도비 확보 ─── */
+  --accent-pm: #d4860a;
+  --accent-dev: #16a34a;
+  --accent-design: #7c3aed;
+  --accent-qa: #2563eb;
+  --accent-pipe: #e11d48;
 
-  --glow-pm: rgba(245, 166, 35, 0.15);
-  --glow-dev: rgba(74, 222, 128, 0.15);
-  --glow-design: rgba(167, 139, 250, 0.15);
-  --glow-qa: rgba(96, 165, 250, 0.15);
+  /* ─── 글로우 — 라이트 모드 opacity 낮춤 ─── */
+  --glow-pm: rgba(212, 134, 10, 0.10);
+  --glow-dev: rgba(22, 163, 74, 0.10);
+  --glow-design: rgba(124, 58, 237, 0.10);
+  --glow-qa: rgba(37, 99, 235, 0.10);
 
   --font-sans: 'Syne', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -63,7 +66,7 @@ body::before {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   pointer-events: none;
   z-index: 999;
-  opacity: 0.4;
+  opacity: 0; /* 라이트 모드에서 노이즈 오버레이 비활성화 */
 }
 
 /* ─── 사이드바 ─── */
@@ -367,8 +370,8 @@ body::before {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  background: rgba(167, 139, 250, 0.08);
-  border: 1px solid rgba(167, 139, 250, 0.2);
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.2);
   border-radius: var(--radius-sm);
   margin-bottom: 16px;
 }
