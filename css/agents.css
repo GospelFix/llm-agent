@@ -4,6 +4,42 @@
    Provider/Model/직급/System Prompt/API Key
    ======================================== */
 
+/* ─── API 키 미입력 안내 배너 ─── */
+.no-api-key-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  margin: 16px 22px 4px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent-pipe) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-pipe) 30%, transparent);
+  border-radius: var(--radius);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.no-api-key-notice-icon {
+  flex-shrink: 0;
+  color: var(--accent-pipe);
+  font-size: 13px;
+  margin-top: 1px;
+}
+
+.no-api-key-notice-link {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--accent-pipe);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.no-api-key-notice-link:hover {
+  text-decoration: underline;
+}
+
 /* ─── 에이전트 목록 페이지 레이아웃 ─── */
 .agents-layout {
   display: grid;

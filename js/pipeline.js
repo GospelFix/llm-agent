@@ -12,6 +12,56 @@ let outputsData = [];
 let currentRunIndex = 0; // 현재 선택된 실행 탭 인덱스
 let isRunning = false;
 
+/* ─── Provider 탭 전역 상태 ─── */
+const PROVIDER_META = {
+  claude: {
+    placeholder: 'sk-ant-api03-...',
+    subtitle: 'Anthropic Claude API 키를 입력하면 실제 AI가 결과물을 생성합니다',
+    link: 'https://console.anthropic.com/settings/keys',
+    linkLabel: 'Anthropic Console에서 API 키 발급하기 →',
+  },
+  openai: {
+    placeholder: 'sk-...',
+    subtitle: 'OpenAI API 키를 입력하면 실제 AI가 결과물을 생성합니다',
+    link: 'https://platform.openai.com/api-keys',
+    linkLabel: 'OpenAI Platform에서 API 키 발급하기 →',
+  },
+};
+
+let selectedProvider = localStorage.getItem('selectedProvider') || 'claude';
+
+/** 탭 선택 상태 적용 (키 미입력 상태에서 placeholder·링크·subtitle 교체) */
+function applyProviderTab(provider) {
+  selectedProvider = provider;
+  localStorage.setItem('selectedProvider', provider);
+
+  /* 탭 active 클래스 전환 */
+  document.querySelectorAll('.provider-tab').forEach(btn => {
+    const isActive = btn.dataset.provider === provider;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
+  });
+
+  /* 키 미입력 상태에서만 placeholder·발급링크·subtitle 교체 */
+  const apiKey = Store.get().apiKey || '';
+  if (!apiKey) {
+    const meta = PROVIDER_META[provider] || PROVIDER_META.claude;
+    const inputEl    = document.getElementById('api-key-input');
+    const subtitleEl = document.getElementById('api-key-subtitle');
+    const linkEl     = document.getElementById('api-key-link');
+    const linkRow    = document.getElementById('api-key-link-row');
+
+    if (inputEl)    inputEl.placeholder    = meta.placeholder;
+    if (subtitleEl) subtitleEl.textContent  = meta.subtitle;
+    if (linkEl) {
+      linkEl.href        = meta.link;
+      linkEl.textContent = meta.linkLabel;
+      linkEl.className   = `api-key-link provider-${provider}`;
+    }
+    if (linkRow) linkRow.style.display = 'block';
+  }
+}
+
 /* ─── 테스트용 샘플 데이터 ─── */
 const SAMPLE_DATA = {
   userInput: '개인 자산관리 핀테크 앱 "Vaulto" 신규 브랜드 아이덴티티 및 UI 시스템 구축. 25~38세 사회초년생·밀레니얼 직장인 타겟. 앱 스토어 론칭 6주 전, 앱 UI·온보딩 화면·마케팅 소재(앱스토어 배너, 인스타그램 피드)까지 디자인 납품 필요. 기존 딱딱한 금융앱 이미지를 탈피하고 "내 돈을 쉽게 다루는 경험"을 비주얼로 구현 목표.',
@@ -891,7 +941,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /* API 키 UI 초기화 */
+  /* 탭 클릭 이벤트 등록 */
+  document.querySelectorAll('.provider-tab').forEach(btn => {
+    btn.addEventListener('click', () => applyProviderTab(btn.dataset.provider));
+  });
+
+  /* API 키 UI 초기화 (탭 상태 포함) */
+  applyProviderTab(selectedProvider);
   updateApiKeyUI();
 
   /* API 키 저장 버튼 */
@@ -921,32 +977,44 @@ const updateApiKeyUI = () => {
   const statusEl   = document.getElementById('api-key-status');
   const clearBtn   = document.getElementById('api-key-clear-btn');
   const inputEl    = document.getElementById('api-key-input');
+  const subtitleEl = document.getElementById('api-key-subtitle');
+  const linkRow    = document.getElementById('api-key-link-row');
+  const linkEl     = document.getElementById('api-key-link');
   const apiKey     = Store.get().apiKey || '';
   const hasKey     = !!apiKey;
   const provider   = detectProvider(apiKey);
   const providerLabel = provider === 'openai' ? 'OpenAI' : 'Claude';
 
+  /* 연결 상태 배지 */
   if (statusEl) {
     statusEl.className = `api-key-status ${hasKey ? 'connected' : 'disconnected'}`;
     statusEl.textContent = hasKey ? `● ${providerLabel} 연결됨` : '○ 미연결 (목업 모드)';
   }
   if (clearBtn) clearBtn.style.display = hasKey ? 'inline-flex' : 'none';
-  if (inputEl)  inputEl.placeholder    = hasKey ? '새 키로 교체하려면 입력...' : 'sk-ant-... 또는 sk-...';
 
-  /* 발급 링크 행 업데이트 */
-  const linkRow = document.getElementById('api-key-link-row');
-  const linkEl  = document.getElementById('api-key-link');
-  if (linkRow && linkEl) {
-    if (hasKey && provider) {
-      const hrefs = {
-        claude: 'https://console.anthropic.com/settings/keys',
-        openai: 'https://platform.openai.com/api-keys',
-      };
-      linkEl.href = hrefs[provider] || '#';
-      linkEl.className = `api-key-link provider-${provider}`;
+  if (hasKey) {
+    /* 키 저장됨: detectProvider로 탭 자동 동기화 */
+    const activeProvider = provider || selectedProvider;
+
+    /* 탭 active 상태 동기화 */
+    document.querySelectorAll('.provider-tab').forEach(btn => {
+      const isActive = btn.dataset.provider === activeProvider;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+    });
+
+    if (inputEl) inputEl.placeholder = '새 키로 교체하려면 입력...';
+
+    /* 발급 링크: 저장된 키의 provider 기준 */
+    if (linkRow && linkEl) {
+      const meta = PROVIDER_META[activeProvider] || {};
+      linkEl.href        = meta.link || '#';
+      linkEl.textContent = meta.linkLabel || 'API 키 발급하기 →';
+      linkEl.className   = `api-key-link provider-${activeProvider}`;
       linkRow.style.display = 'block';
-    } else {
-      linkRow.style.display = 'none';
     }
+  } else {
+    /* 키 미입력: selectedProvider 탭 기준으로 UI 복원 */
+    applyProviderTab(selectedProvider);
   }
 };

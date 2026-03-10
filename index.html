@@ -60,13 +60,17 @@
                 </div>
               </span>
             </div>
-            <div class="card-subtitle">Claude(sk-ant-...) 또는 OpenAI(sk-...) API 키를 입력하면 실제 AI가 결과물을 생성합니다</div>
+            <div class="card-subtitle" id="api-key-subtitle">Anthropic Claude API 키를 입력하면 실제 AI가 결과물을 생성합니다</div>
           </div>
           <div class="api-key-status" id="api-key-status"></div>
         </div>
+        <div class="provider-tabs" id="provider-tabs">
+          <button class="provider-tab active" data-provider="claude" aria-pressed="true">🤖 Claude</button>
+          <button class="provider-tab" data-provider="openai" aria-pressed="false">◆ OpenAI</button>
+        </div>
         <div class="api-key-row">
           <input type="password" id="api-key-input" class="brand-input api-key-input"
-            placeholder="sk-ant-api03-... 또는 sk-..." aria-label="Claude 또는 OpenAI API 키 입력" autocomplete="off" />
+            placeholder="sk-ant-api03-..." aria-label="Claude 또는 OpenAI API 키 입력" autocomplete="off" />
           <button class="btn btn-primary btn-sm" id="api-key-save-btn" aria-label="API 키 저장">저장</button>
           <button class="btn btn-ghost btn-sm" id="api-key-clear-btn" aria-label="API 키 삭제" style="display:none">삭제</button>
         </div>

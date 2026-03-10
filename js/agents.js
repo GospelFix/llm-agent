@@ -397,6 +397,13 @@ const renderEditPanel = (agentId) => {
         </div>
       </div>
 
+      <!-- API 키 미입력 안내 -->
+      <div class="no-api-key-notice" id="no-api-key-notice" style="display:none" role="alert">
+        <span class="no-api-key-notice-icon">⚠</span>
+        <span>API 키를 저장해야 온전한 아웃풋 파일을 사용하실 수 있습니다.</span>
+        <a href="../index.html" class="no-api-key-notice-link">키 저장하러 가기 →</a>
+      </div>
+
       <!-- ③ 직급 -->
       <div class="panel-section">
         <div class="panel-section-title">직급 & 토큰 제한</div>
@@ -430,19 +437,29 @@ const renderEditPanel = (agentId) => {
 
   /* ─── 이벤트 바인딩 ─── */
 
-  /* Provider 변경 → Model 옵션 동적 갱신 */
+  /* API 키 미입력 안내 표시 헬퍼 */
+  const showApiKeyNoticeIfNeeded = () => {
+    const notice = panel.querySelector('#no-api-key-notice');
+    if (!notice) return;
+    const hasKey = !!(Store.get().apiKey || '');
+    notice.style.display = hasKey ? 'none' : 'flex';
+  };
+
+  /* Provider 변경 → Model 옵션 동적 갱신 + API 키 안내 */
   panel.querySelector('#provider-select').addEventListener('change', (e) => {
     const newProvider = e.target.value;
     const modelSelect = panel.querySelector('#model-select');
     const modelHint = panel.querySelector('#model-hint');
     modelSelect.innerHTML = buildModelOptions(newProvider, null);
     modelHint.textContent = getModelHint(newProvider, modelSelect.value);
+    showApiKeyNoticeIfNeeded();
   });
 
-  /* Model 변경 → 힌트 갱신 */
+  /* Model 변경 → 힌트 갱신 + API 키 안내 */
   panel.querySelector('#model-select').addEventListener('change', (e) => {
     const provider = panel.querySelector('#provider-select').value;
     panel.querySelector('#model-hint').textContent = getModelHint(provider, e.target.value);
+    showApiKeyNoticeIfNeeded();
   });
 
   /* 직급 변경 → 토큰 제한 뱃지 갱신 */
