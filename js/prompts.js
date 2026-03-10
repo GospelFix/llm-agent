@@ -49,7 +49,7 @@ const buildContextVars = (agents) => {
 const init = async () => {
   try {
     /* Store에서 선택된 에이전시 파일 읽기 */
-    const agentsFile = Store.get().selectedAgency || 'agents.json';
+    const agentsFile = Store.get().selectedAgency || 'design-agents.json';
     const data = await fetchJSON(`${PROMPTS_DATA_ROOT}${agentsFile}`);
     agentsData = data.agents;
 
