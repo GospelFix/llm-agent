@@ -153,14 +153,15 @@ const init = async () => {
 
     /* 커스텀 파이프라인이 있으면 스텝 순서대로 agentsData 재구성 */
     if (customPipeline?.steps?.length) {
+      /* agentData가 임베드된 크로스 에이전시 스텝 우선 지원 */
       const agentsMap = Object.fromEntries(rawAgents.map(a => [a.id, a]));
       agentsData = customPipeline.steps
         .slice()
         .sort((a, b) => a.order - b.order)
         .map(step => {
-          const base = agentsMap[step.agentId];
+          /* step.agentData가 있으면 크로스 에이전시 임베드 데이터 사용, 없으면 파일에서 룩업 */
+          const base = step.agentData || agentsMap[step.agentId];
           if (!base) return null;
-          /* 편집기에서 지정한 outputFile, model, rank 오버라이드 */
           return {
             ...base,
             outputFile: step.outputFile || base.outputFile,

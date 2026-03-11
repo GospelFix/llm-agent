@@ -1,12 +1,12 @@
 /* ========================================
    Pipeline Editor JS — 파이프라인 편집기 로직
-   에이전트 추가·삭제·순서변경·컨텍스트 설정
+   크로스 에이전시 혼합 구성 + 드래그 정렬
    ======================================== */
 
 'use strict';
 
 /* ─── 상태 ─── */
-let agentsPool = [];     // 현재 에이전시의 전체 에이전트 목록 (선택 풀)
+let agentsPool = [];     // 전체 에이전시 에이전트 병합 풀
 let currentSteps = [];   // 편집 중인 스텝 배열
 let dragSrcIdx = -1;     // 드래그 중인 스텝 인덱스
 
@@ -14,7 +14,15 @@ let dragSrcIdx = -1;     // 드래그 중인 스텝 인덱스
 const IS_SUB = window.location.pathname.includes('/pages/');
 const DATA_ROOT = IS_SUB ? '../data/' : './data/';
 
-/* ─── 모델 목록 (에이전트 셀렉터에 사용) ─── */
+/* ─── 로드할 에이전시 목록 ─── */
+const AGENCY_SOURCES = [
+  { file: 'agents.json',           label: '기본 파이프라인', icon: '⚡' },
+  { file: 'marketing-agents.json', label: '마케팅회사',      icon: '🎯' },
+  { file: 'design-agents.json',    label: '디자인 에이전시', icon: '🎨' },
+  { file: 'dev-agents.json',       label: 'SI 에이전시',    icon: '🏗' },
+];
+
+/* ─── 모델 목록 ─── */
 const ALL_MODELS = [
   { value: 'claude-haiku-4-5',  label: 'Claude Haiku 4.5' },
   { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
@@ -41,38 +49,54 @@ const fetchJSON = async (url) => {
   return res.json();
 };
 
-/* ─── 에이전트 풀 로드 ─── */
+/* ─── 전체 에이전시 에이전트 풀 로드 ─── */
 const loadAgentsPool = async () => {
-  const agencyFile = Store.get().selectedAgency || 'agents.json';
-  try {
-    const data = await fetchJSON(`${DATA_ROOT}${agencyFile}`);
-    agentsPool = data.agents || [];
-  } catch {
-    agentsPool = [];
-  }
+  /* 4개 에이전시 병렬 로드 */
+  const results = await Promise.allSettled(
+    AGENCY_SOURCES.map(src =>
+      fetchJSON(`${DATA_ROOT}${src.file}`)
+        .then(d => (d.agents || []).map(agent => ({
+          ...agent,
+          _agencyFile:  src.file,
+          _agencyLabel: src.label,
+          _agencyIcon:  src.icon,
+          /* 에이전시+ID 조합으로 풀 내 고유 키 생성 (동명 ID 충돌 방지) */
+          _poolKey: `${src.file}::${agent.id}`,
+        })))
+    )
+  );
+
+  /* 성공한 에이전시만 병합 */
+  agentsPool = results
+    .filter(r => r.status === 'fulfilled')
+    .flatMap(r => r.value);
 };
 
-/* ─── 현재 파이프라인 로드 (커스텀 → 기본 에이전시 순서) ─── */
+/* ─── 현재 파이프라인 로드 ─── */
 const loadCurrentPipeline = async () => {
   const stored = Store.get();
   const custom = stored.customPipeline;
 
   if (custom?.steps?.length) {
-    /* 커스텀 파이프라인이 있으면 그대로 복원 */
-    const agentsMap = Object.fromEntries(agentsPool.map(a => [a.id, a]));
+    /* 저장된 커스텀 파이프라인 복원: agentData가 step에 임베드되어 있으면 그대로 사용 */
     currentSteps = custom.steps
       .slice()
       .sort((a, b) => a.order - b.order)
       .map(step => {
-        const base = agentsMap[step.agentId] || agentsPool[0];
+        /* agentData가 임베드된 경우 (크로스 에이전시 지원) */
+        const base = step.agentData || agentsPool.find(a => a.id === step.agentId) || {};
         return {
           agentId:      step.agentId,
-          name:         base?.name    || step.agentId,
-          icon:         base?.icon    || '🤖',
-          model:        step.model    || base?.model    || 'claude-haiku-4-5',
-          rank:         step.rank     || base?.rank     || '팀장',
-          outputFile:   step.outputFile || base?.outputFile || 'output',
+          _agencyFile:  step._agencyFile  || base._agencyFile  || '',
+          _agencyLabel: step._agencyLabel || base._agencyLabel || '',
+          _agencyIcon:  step._agencyIcon  || base._agencyIcon  || '',
+          name:         base.name         || step.agentId,
+          icon:         base.icon         || '🤖',
+          model:        step.model        || base.model        || 'claude-haiku-4-5',
+          rank:         step.rank         || base.rank         || '팀장',
+          outputFile:   step.outputFile   || base.outputFile   || step.agentId,
           inputContext: step.inputContext || [],
+          agentData:    base,
         };
       });
 
@@ -80,16 +104,8 @@ const loadCurrentPipeline = async () => {
     const nameInput = document.getElementById('pipeline-name-input');
     if (nameInput) nameInput.value = custom.name || '';
   } else {
-    /* 커스텀 없으면 에이전시 기본 에이전트 목록으로 초기화 */
-    currentSteps = agentsPool.map(agent => ({
-      agentId:      agent.id,
-      name:         agent.name,
-      icon:         agent.icon    || '🤖',
-      model:        agent.model   || 'claude-haiku-4-5',
-      rank:         agent.rank    || '팀장',
-      outputFile:   agent.outputFile || agent.id,
-      inputContext: [],
-    }));
+    /* 커스텀 없으면 빈 스텝으로 시작 (에이전시 종속 해제) */
+    currentSteps = [];
   }
 };
 
@@ -114,23 +130,6 @@ const renderStepList = () => {
 
   /* 각 스텝 이벤트 바인딩 */
   currentSteps.forEach((_, idx) => {
-    /* 에이전트 셀렉터 변경 */
-    document.getElementById(`step-agent-${idx}`)?.addEventListener('change', (e) => {
-      const agentId = e.target.value;
-      const agent = agentsPool.find(a => a.id === agentId);
-      if (agent) {
-        currentSteps[idx] = {
-          ...currentSteps[idx],
-          agentId:    agent.id,
-          name:       agent.name,
-          icon:       agent.icon || '🤖',
-          model:      agent.model || currentSteps[idx].model,
-          outputFile: agent.outputFile || agent.id,
-        };
-        renderStepList();
-      }
-    });
-
     /* 모델 셀렉터 변경 */
     document.getElementById(`step-model-${idx}`)?.addEventListener('change', (e) => {
       currentSteps[idx].model = e.target.value;
@@ -144,22 +143,19 @@ const renderStepList = () => {
     /* 출력 키 입력 변경 */
     document.getElementById(`step-output-${idx}`)?.addEventListener('input', (e) => {
       const oldKey = currentSteps[idx].outputFile;
-      const newKey = e.target.value.trim().replace(/\s+/g, '_');
+      const newKey = e.target.value.replace(/\s+/g, '_');
       currentSteps[idx].outputFile = newKey;
 
       /* 이후 스텝들의 inputContext에서 구키 → 신키 교체 */
       for (let j = idx + 1; j < currentSteps.length; j++) {
         const ctxIdx = currentSteps[j].inputContext.indexOf(oldKey);
-        if (ctxIdx !== -1) {
-          currentSteps[j].inputContext[ctxIdx] = newKey;
-        }
+        if (ctxIdx !== -1) currentSteps[j].inputContext[ctxIdx] = newKey;
       }
     });
 
     /* 컨텍스트 체크박스 변경 */
     container.querySelectorAll(`.ctx-checkbox[data-step="${idx}"]`).forEach(cb => {
       cb.addEventListener('change', () => {
-        /* 이전 스텝들의 outputFile 목록에서 체크된 것만 inputContext에 저장 */
         currentSteps[idx].inputContext = Array.from(
           container.querySelectorAll(`.ctx-checkbox[data-step="${idx}"]:checked`)
         ).map(el => el.value);
@@ -175,11 +171,6 @@ const renderStepList = () => {
 
 /* ─── 단일 스텝 카드 HTML 생성 ─── */
 const buildStepHTML = (step, idx) => {
-  /* 에이전트 셀렉터 옵션 */
-  const agentOptions = agentsPool.map(a =>
-    `<option value="${a.id}" ${a.id === step.agentId ? 'selected' : ''}>${a.icon || ''} ${a.name}</option>`
-  ).join('');
-
   /* 모델 셀렉터 옵션 */
   const modelOptions = ALL_MODELS.map(m =>
     `<option value="${m.value}" ${m.value === step.model ? 'selected' : ''}>${m.label}</option>`
@@ -189,6 +180,11 @@ const buildStepHTML = (step, idx) => {
   const rankOptions = RANK_LIST.map(r =>
     `<option value="${r.value}" ${r.value === step.rank ? 'selected' : ''}>${r.icon} ${r.value}</option>`
   ).join('');
+
+  /* 에이전시 출처 뱃지 */
+  const agencyBadge = step._agencyLabel
+    ? `<span class="step-agency-badge">${step._agencyIcon || ''} ${step._agencyLabel}</span>`
+    : '';
 
   /* 컨텍스트 체크박스: 이전 스텝들의 outputFile 목록 */
   const prevOutputs = currentSteps.slice(0, idx).map(s => s.outputFile).filter(Boolean);
@@ -214,16 +210,17 @@ const buildStepHTML = (step, idx) => {
          role="listitem"
          aria-label="스텝 ${idx + 1}: ${step.name}">
 
-      <!-- 드래그 핸들 + 스텝 번호 -->
+      <!-- 드래그 핸들 + 스텝 번호 + 에이전트 이름 -->
       <div class="step-header">
         <span class="drag-handle" title="드래그하여 순서 변경" aria-hidden="true">≡</span>
         <span class="step-number">STEP ${idx + 1}</span>
 
-        <!-- 에이전트 셀렉터 -->
-        <select id="step-agent-${idx}" class="step-select step-agent-select"
-                aria-label="에이전트 선택">
-          ${agentOptions}
-        </select>
+        <!-- 에이전트 이름 (고정 표시 — 변경하려면 삭제 후 재추가) -->
+        <span class="step-agent-name">
+          <span class="step-agent-icon">${step.icon || '🤖'}</span>
+          ${step.name}
+        </span>
+        ${agencyBadge}
 
         <!-- 모델 셀렉터 -->
         <select id="step-model-${idx}" class="step-select step-model-select"
@@ -239,7 +236,7 @@ const buildStepHTML = (step, idx) => {
 
         <!-- 삭제 버튼 -->
         <button id="step-remove-${idx}" class="step-remove-btn"
-                aria-label="스텝 ${idx + 1} 삭제" title="삭제">× 삭제</button>
+                aria-label="스텝 ${idx + 1} 삭제">× 삭제</button>
       </div>
 
       <!-- 출력 키 + 컨텍스트 -->
@@ -291,17 +288,12 @@ const initDragDrop = () => {
     item.addEventListener('drop', (e) => {
       e.preventDefault();
       item.classList.remove('drag-over');
-
       const dropIdx = parseInt(item.dataset.idx, 10);
       if (dragSrcIdx === -1 || dragSrcIdx === dropIdx) return;
 
-      /* 배열 재정렬 */
       const moved = currentSteps.splice(dragSrcIdx, 1)[0];
       currentSteps.splice(dropIdx, 0, moved);
-
-      /* 재정렬 후 모든 스텝의 inputContext 유효성 재검사 */
       updateAllContextValidity();
-
       dragSrcIdx = -1;
       renderStepList();
     });
@@ -314,21 +306,24 @@ const updateAllContextValidity = () => {
     const availableKeys = new Set(
       currentSteps.slice(0, idx).map(s => s.outputFile).filter(Boolean)
     );
-    /* 더 이상 이전 스텝이 아닌 키는 inputContext에서 제거 */
     step.inputContext = (step.inputContext || []).filter(k => availableKeys.has(k));
   });
 };
 
-/* ─── 스텝 추가 (에이전트 풀에서 선택) ─── */
+/* ─── 스텝 추가 (전체 에이전트 데이터 임베드) ─── */
 const addStep = (agent) => {
   currentSteps.push({
     agentId:      agent.id,
+    _agencyFile:  agent._agencyFile  || '',
+    _agencyLabel: agent._agencyLabel || '',
+    _agencyIcon:  agent._agencyIcon  || '',
     name:         agent.name,
     icon:         agent.icon || '🤖',
     model:        agent.model || 'claude-haiku-4-5',
-    rank:         agent.rank || '팀장',
+    rank:         agent.rank  || '팀장',
     outputFile:   `${agent.outputFile || agent.id}_${currentSteps.length + 1}`,
     inputContext: [],
+    agentData:    agent,   // 크로스 에이전시 식별을 위해 전체 데이터 임베드
   });
   closeModal();
   renderStepList();
@@ -339,7 +334,6 @@ const removeStep = (idx) => {
   const removedKey = currentSteps[idx].outputFile;
   currentSteps.splice(idx, 1);
 
-  /* 삭제된 스텝의 outputFile을 참조하던 이후 스텝들의 inputContext 정리 */
   currentSteps.forEach(step => {
     step.inputContext = (step.inputContext || []).filter(k => k !== removedKey);
   });
@@ -347,32 +341,42 @@ const removeStep = (idx) => {
   renderStepList();
 };
 
-/* ─── 에이전트 풀 모달 ─── */
+/* ─── 에이전트 풀 모달 (에이전시별 그룹핑) ─── */
 const openModal = () => {
   const modal = document.getElementById('add-agent-modal');
   const poolList = document.getElementById('agent-pool-list');
   if (!modal || !poolList) return;
 
-  poolList.innerHTML = agentsPool.map(agent => `
-    <button class="agent-pool-item" data-id="${agent.id}"
-            aria-label="${agent.name} 추가">
-      <span class="agent-pool-icon">${agent.icon || '🤖'}</span>
-      <div class="agent-pool-info">
-        <div class="agent-pool-name">${agent.name}</div>
-        <div class="agent-pool-desc">${agent.desc || ''}</div>
-      </div>
-    </button>
+  /* 에이전시별로 그룹핑 */
+  const groups = AGENCY_SOURCES.map(src => ({
+    ...src,
+    agents: agentsPool.filter(a => a._agencyFile === src.file),
+  })).filter(g => g.agents.length > 0);
+
+  poolList.innerHTML = groups.map(group => `
+    <div class="agent-pool-group">
+      <div class="agent-pool-group-label">${group.icon} ${group.label}</div>
+      ${group.agents.map(agent => `
+        <button class="agent-pool-item" data-poolkey="${agent._poolKey}"
+                aria-label="${agent.name} 추가">
+          <span class="agent-pool-icon">${agent.icon || '🤖'}</span>
+          <div class="agent-pool-info">
+            <div class="agent-pool-name">${agent.name}</div>
+            <div class="agent-pool-desc">${agent.desc || ''}</div>
+          </div>
+        </button>
+      `).join('')}
+    </div>
   `).join('');
 
   poolList.querySelectorAll('.agent-pool-item').forEach(btn => {
     btn.addEventListener('click', () => {
-      const agent = agentsPool.find(a => a.id === btn.dataset.id);
+      const agent = agentsPool.find(a => a._poolKey === btn.dataset.poolkey);
       if (agent) addStep(agent);
     });
   });
 
   modal.style.display = 'flex';
-  modal.focus?.();
 };
 
 const closeModal = () => {
@@ -392,6 +396,10 @@ const savePipeline = () => {
     rank:         step.rank,
     outputFile:   step.outputFile,
     inputContext: step.inputContext || [],
+    _agencyFile:  step._agencyFile,
+    _agencyLabel: step._agencyLabel,
+    _agencyIcon:  step._agencyIcon,
+    agentData:    step.agentData,  // 전체 에이전트 데이터 임베드 (pipeline.js에서 직접 사용)
   }));
 
   Store.set({
@@ -407,30 +415,21 @@ const savePipeline = () => {
 
 /* ─── 파이프라인 초기화 ─── */
 const resetPipeline = () => {
-  if (!confirm('커스텀 파이프라인을 초기화하고 기본 파이프라인으로 복원할까요?')) return;
+  if (!confirm('커스텀 파이프라인을 초기화할까요?')) return;
 
   Store.set({ customPipeline: null });
-  currentSteps = agentsPool.map(agent => ({
-    agentId:      agent.id,
-    name:         agent.name,
-    icon:         agent.icon || '🤖',
-    model:        agent.model || 'claude-haiku-4-5',
-    rank:         agent.rank || '팀장',
-    outputFile:   agent.outputFile || agent.id,
-    inputContext: [],
-  }));
+  currentSteps = [];
 
   const nameInput = document.getElementById('pipeline-name-input');
   if (nameInput) nameInput.value = '';
 
   renderStepList();
-  showToast('🔄 기본 파이프라인으로 초기화되었습니다.');
+  showToast('🔄 파이프라인이 초기화되었습니다. 새로 구성하거나 파이프라인 페이지에서 기본 에이전시를 사용하세요.');
 };
 
 /* ─── 토스트 알림 ─── */
 const showToast = (msg) => {
-  const existing = document.getElementById('editor-toast');
-  if (existing) existing.remove();
+  document.getElementById('editor-toast')?.remove();
 
   const toast = document.createElement('div');
   toast.id = 'editor-toast';
@@ -438,7 +437,6 @@ const showToast = (msg) => {
   toast.textContent = msg;
   document.body.appendChild(toast);
 
-  /* 3초 후 페이드아웃 제거 */
   setTimeout(() => toast.classList.add('fade-out'), 2500);
   setTimeout(() => toast.remove(), 3000);
 };
@@ -449,23 +447,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadCurrentPipeline();
   renderStepList();
 
-  /* 에이전트 추가 버튼 */
   document.getElementById('add-step-btn')?.addEventListener('click', openModal);
-
-  /* 모달 닫기 */
   document.getElementById('modal-close-btn')?.addEventListener('click', closeModal);
   document.getElementById('add-agent-modal')?.addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeModal();
   });
-
-  /* ESC 키로 모달 닫기 */
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeModal();
   });
 
-  /* 저장 버튼 */
   document.getElementById('save-btn')?.addEventListener('click', savePipeline);
-
-  /* 초기화 버튼 */
   document.getElementById('reset-btn')?.addEventListener('click', resetPipeline);
 });

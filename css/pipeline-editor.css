@@ -149,6 +149,33 @@
   min-width: 90px;
 }
 
+/* 에이전트 이름 고정 표시 */
+.step-agent-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+.step-agent-icon {
+  font-size: 16px;
+}
+
+/* 에이전시 출처 뱃지 */
+.step-agency-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
 /* 삭제 버튼 */
 .step-remove-btn {
   margin-left: auto;
@@ -368,6 +395,23 @@
 .agent-pool-desc {
   font-size: 11px;
   color: var(--text-dim);
+}
+
+/* 에이전시별 그룹 헤더 */
+.agent-pool-group {
+  margin-bottom: 4px;
+}
+
+.agent-pool-group-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 8px 4px 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
 }
 
 /* ─── 커스텀 파이프라인 활성 뱃지 (pipeline.js가 index.html에 주입) ─── */
