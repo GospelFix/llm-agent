@@ -1,4 +1,3 @@
-
 ---
 name: Current Task
 version: 1.0.0

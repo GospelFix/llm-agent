@@ -1,4 +1,3 @@
-
 ---
 name: Claude 작업 규칙
 section: Claude.code의 행동 규칙 입니다.
