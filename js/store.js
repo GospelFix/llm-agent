@@ -16,11 +16,18 @@ const Store = (() => {
     pipelineStatus: 'idle', // 'idle' | 'running' | 'completed'
     activeRunStep: null,   // 현재 실행 중인 에이전트 id
     selectedAgency: 'agents.json', // 선택된 에이전시 유형 파일명
-    apiKey: '',            // Anthropic API 키 (실제 AI 생성에 사용)
+    apiKey: '',            // (구) API 키 — 마이그레이션 소스로만 사용 (하위 호환)
+    apiKeys: {             // 프로바이더별 API 키
+      claude: '',
+      openai: '',
+      custom: '',
+    },
+    customApiEndpoint: '', // 커스텀 엔드포인트 (예: https://api.groq.com/openai/v1)
+    customModelId: '',     // 커스텀 기본 모델 (예: llama-3.1-70b)
     userInput: '',         // {{user_input}} 변수에 주입되는 프로젝트 요청
     generatedRuns: [],     // 실제 생성된 실행 기록 (localStorage 영속)
     generatedOutputs: [],  // 실제 생성된 아웃풋 파일 (localStorage 영속)
-    customPipeline: null,  // 커스텀 파이프라인 { id, name, steps: [{agentId, order, inputContext[], outputFile}] } | null
+    customPipeline: null,  // 커스텀 에이전트 { id, name, steps: [{agentId, order, inputContext[], outputFile}] } | null
     brandInfo: {           // {{brand_info}} 변수에 주입되는 클라이언트 브랜드 가이드라인
       brandName: '',
       slogan: '',

@@ -28,7 +28,14 @@ const PROVIDER_MODELS = {
       { value: 'gpt-4o-mini', label: 'GPT-4o Mini', desc: '경량 · 저비용' },
       { value: 'o1-mini',     label: 'O1 Mini',     desc: '추론 특화' },
     ],
-  }
+  },
+  custom: {
+    label: '커스텀',
+    icon: '🔌',
+    models: [
+      { value: 'custom', label: '커스텀 모델', desc: '직접 입력 · OpenAI-compatible' },
+    ],
+  },
 };
 
 /* ─── 직급 옵션 (토큰 제한 포함) ─── */
@@ -216,14 +223,15 @@ const detectProvider = (modelValue) => {
   return 'anthropic';
 };
 
-/* ─── 저장된 API 키 prefix로 허용 프로바이더 반환 ─── */
-/* null = 제한 없음 (키 미입력), 'anthropic' | 'openai' = 해당 프로바이더만 허용 */
-const getAllowedProviderFromKey = () => {
-  const apiKey = Store.get().apiKey || '';
-  if (!apiKey) return null;
-  if (apiKey.startsWith('sk-ant-')) return 'anthropic';
-  if (apiKey.startsWith('sk-'))    return 'openai';
-  return null;
+/* ─── 저장된 API 키로 허용 프로바이더 배열 반환 ─── */
+/* null = 제한 없음 (키 미입력), string[] = 키가 있는 프로바이더만 허용 */
+const getAllowedProviders = () => {
+  const apiKeys = Store.get().apiKeys || {};
+  const allowed = [];
+  if (apiKeys.claude) allowed.push('anthropic');
+  if (apiKeys.openai) allowed.push('openai');
+  if (apiKeys.custom) allowed.push('custom');
+  return allowed.length > 0 ? allowed : null; // null = 모두 허용
 };
 
 /* ─── Provider 툴팁 HTML 생성 ─── */
@@ -336,13 +344,13 @@ const renderEditPanel = (agentId) => {
   const currentModel    = override.model      || agent.model;
   const currentRank     = override.rank       || rankLabelToValue(agent.rank);
 
-  /* API 키 prefix로 허용 프로바이더 결정 → 키가 있으면 강제, 없으면 오버라이드/모델값 사용 */
-  const allowedProvider = getAllowedProviderFromKey();
-  const effectiveProvider = allowedProvider || override.provider || detectProvider(currentModel);
+  /* 저장된 API 키로 허용 프로바이더 결정 → 없으면 오버라이드/모델값 사용 */
+  const allowedProviders  = getAllowedProviders();
+  const effectiveProvider = override.provider || detectProvider(currentModel);
 
-  /* Provider 옵션 HTML — API 키가 있으면 해당 프로바이더만 표시 */
+  /* Provider 옵션 HTML — 키가 있으면 해당 프로바이더만 표시, 없으면 전체 표시 */
   const providerOptionsHTML = Object.entries(PROVIDER_MODELS)
-    .filter(([key]) => !allowedProvider || key === allowedProvider)
+    .filter(([key]) => !allowedProviders || allowedProviders.includes(key))
     .map(([key, p]) => `
       <option value="${key}"${effectiveProvider === key ? ' selected' : ''}>${p.icon} ${p.label}</option>
     `).join('');
@@ -441,8 +449,9 @@ const renderEditPanel = (agentId) => {
   const showApiKeyNoticeIfNeeded = () => {
     const notice = panel.querySelector('#no-api-key-notice');
     if (!notice) return;
-    const hasKey = !!(Store.get().apiKey || '');
-    notice.style.display = hasKey ? 'none' : 'flex';
+    const apiKeys = Store.get().apiKeys || {};
+    const hasAnyKey = !!(apiKeys.claude || apiKeys.openai || apiKeys.custom);
+    notice.style.display = hasAnyKey ? 'none' : 'flex';
   };
 
   /* Provider 변경 → Model 옵션 동적 갱신 + API 키 안내 */

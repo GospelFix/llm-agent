@@ -26,11 +26,15 @@ const PROVIDER_META = {
     link: 'https://platform.openai.com/api-keys',
     linkLabel: 'OpenAI Platform에서 API 키 발급하기 →',
   },
+  custom: {
+    placeholder: 'sk-... 또는 커스텀 키',
+    subtitle: 'OpenAI-compatible API (Groq, Together AI, Ollama 등)',
+  },
 };
 
 let selectedProvider = localStorage.getItem('selectedProvider') || 'claude';
 
-/** 탭 선택 상태 적용 (키 미입력 상태에서 placeholder·링크·subtitle 교체) */
+/** 탭 선택 상태 적용 (placeholder·링크·subtitle 교체, 커스텀 필드 표시) */
 function applyProviderTab(provider) {
   selectedProvider = provider;
   localStorage.setItem('selectedProvider', provider);
@@ -42,9 +46,15 @@ function applyProviderTab(provider) {
     btn.setAttribute('aria-pressed', String(isActive));
   });
 
-  /* 키 미입력 상태에서만 placeholder·발급링크·subtitle 교체 */
-  const apiKey = Store.get().apiKey || '';
-  if (!apiKey) {
+  /* 커스텀 전용 엔드포인트·모델 입력 필드 표시/숨김 */
+  const customFields = document.getElementById('custom-api-fields');
+  if (customFields) customFields.style.display = provider === 'custom' ? 'block' : 'none';
+
+  /* 현재 프로바이더 키 미입력 상태에서 placeholder·발급링크·subtitle 교체 */
+  const state    = Store.get();
+  const apiKeys  = state.apiKeys || {};
+  const hasKey   = !!(apiKeys[provider] || '');
+  if (!hasKey) {
     const meta = PROVIDER_META[provider] || PROVIDER_META.claude;
     const inputEl    = document.getElementById('api-key-input');
     const subtitleEl = document.getElementById('api-key-subtitle');
@@ -53,12 +63,21 @@ function applyProviderTab(provider) {
 
     if (inputEl)    inputEl.placeholder    = meta.placeholder;
     if (subtitleEl) subtitleEl.textContent  = meta.subtitle;
-    if (linkEl) {
+    if (linkEl && meta.link) {
       linkEl.href        = meta.link;
-      linkEl.textContent = meta.linkLabel;
+      linkEl.textContent = meta.linkLabel || '';
       linkEl.className   = `api-key-link provider-${provider}`;
     }
-    if (linkRow) linkRow.style.display = 'block';
+    /* 커스텀 탭은 발급 링크 숨김 */
+    if (linkRow) linkRow.style.display = meta.link ? 'block' : 'none';
+  }
+
+  /* 커스텀 탭 저장값 복원 */
+  if (provider === 'custom') {
+    const endpointInput = document.getElementById('custom-endpoint-input');
+    const modelInput    = document.getElementById('custom-model-input');
+    if (endpointInput) endpointInput.value = state.customApiEndpoint || '';
+    if (modelInput)    modelInput.value    = state.customModelId     || '';
   }
 }
 
@@ -122,7 +141,7 @@ const AGENTS_FILE = (() => {
   return resolved;
 })();
 
-/* ─── 커스텀 파이프라인 뱃지 렌더링 ─── */
+/* ─── 커스텀 에이전트 뱃지 렌더링 ─── */
 const renderCustomPipelineBadge = (name) => {
   const headerDiv = document.querySelector('.page-header > div:first-child');
   if (!headerDiv) return;
@@ -133,7 +152,7 @@ const renderCustomPipelineBadge = (name) => {
   const badge = document.createElement('p');
   badge.id = 'custom-pipeline-badge';
   badge.className = 'custom-pipeline-badge';
-  badge.innerHTML = `✏️ 커스텀 파이프라인 활성 <strong>${name || '이름 없음'}</strong>
+  badge.innerHTML = `✏️ 커스텀 에이전트 활성 <strong>${name || '이름 없음'}</strong>
     — <a href="./pages/pipeline-editor.html" style="color:inherit;text-decoration:underline">편집기에서 변경</a>`;
   headerDiv.appendChild(badge);
 };
@@ -151,7 +170,7 @@ const init = async () => {
       fetchJSON(`${DATA_ROOT}outputs.json`).then(d => d.outputs),
     ]);
 
-    /* 커스텀 파이프라인이 있으면 스텝 순서대로 agentsData 재구성 */
+    /* 커스텀 에이전트이 있으면 스텝 순서대로 agentsData 재구성 */
     if (customPipeline?.steps?.length) {
       /* agentData가 임베드된 크로스 에이전시 스텝 우선 지원 */
       const agentsMap = Object.fromEntries(rawAgents.map(a => [a.id, a]));
@@ -554,12 +573,12 @@ const renderOutputPreview = (outputId, agentId) => {
 };
 
 
-/* ─── 프로바이더 감지 (키 prefix 기반) ─── */
-const detectProvider = (apiKey) => {
-  if (!apiKey) return null;
-  if (apiKey.startsWith('sk-ant-')) return 'claude';
-  if (apiKey.startsWith('sk-')) return 'openai';
-  return null;
+/* ─── 프로바이더 감지 (모델명 기반) ─── */
+const detectProvider = (model) => {
+  if (!model) return 'claude';
+  if (model.startsWith('claude')) return 'claude';
+  if (model.startsWith('gpt') || model.startsWith('o1') || model.startsWith('o3')) return 'openai';
+  return 'custom';
 };
 
 /* ─── Claude API 호출 ─── */
@@ -592,7 +611,8 @@ const callClaudeAPI = async (prompt, model, apiKey) => {
 
 /* ─── OpenAI API 호출 ─── */
 const callOpenAIAPI = async (prompt, model, apiKey) => {
-  const openaiModel = model && model.startsWith('gpt') ? model : 'gpt-4o-mini';
+  const isOpenAI = model && (model.startsWith('gpt') || model.startsWith('o1') || model.startsWith('o3'));
+  const openaiModel = isOpenAI ? model : 'gpt-4o-mini';
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -616,11 +636,46 @@ const callOpenAIAPI = async (prompt, model, apiKey) => {
   };
 };
 
-/* ─── 프로바이더에 따라 올바른 API 호출 ─── */
-const callAI = async (prompt, model, apiKey) => {
-  const provider = detectProvider(apiKey);
-  if (provider === 'openai') return callOpenAIAPI(prompt, model, apiKey);
-  return callClaudeAPI(prompt, model, apiKey);
+/* ─── 커스텀 OpenAI-compatible API 호출 ─── */
+const callCustomAPI = async (prompt, model, apiKey, endpoint) => {
+  if (!endpoint) throw new Error('커스텀 엔드포인트가 설정되지 않았습니다');
+  const res = await fetch(`${endpoint}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API ${res.status}`);
+  }
+  const data = await res.json();
+  return {
+    text:   data.choices[0].message.content,
+    tokens: (data.usage?.prompt_tokens || 0) + (data.usage?.completion_tokens || 0),
+  };
+};
+
+/* ─── 프로바이더에 따라 올바른 API 호출 (Store에서 키 자동 선택) ─── */
+const callAI = async (prompt, model, stepCustomModelId) => {
+  const state    = Store.get();
+  const apiKeys  = state.apiKeys || {};
+  const provider = detectProvider(model);
+
+  if (provider === 'openai') {
+    return callOpenAIAPI(prompt, model, apiKeys.openai || '');
+  }
+  if (provider === 'custom') {
+    const effectiveModel = stepCustomModelId || state.customModelId || 'llama-3.1-70b';
+    return callCustomAPI(prompt, effectiveModel, apiKeys.custom || '', state.customApiEndpoint || '');
+  }
+  return callClaudeAPI(prompt, model, apiKeys.claude || '');
 };
 
 /* ─── 입력값 기반 템플릿 아웃풋 (API 키 없을 때) ─── */
@@ -719,10 +774,11 @@ const simulateRun = async (startAgentId) => {
   renderPipelineSteps();
 
   /* 크레딧 사전 체크 (API 키 없을 때만) */
-  const preState = Store.get();
-  const apiKey   = preState.apiKey || '';
+  const preState  = Store.get();
+  const apiKeys   = preState.apiKeys || {};
+  const hasAnyKey = !!(apiKeys.claude || apiKeys.openai || apiKeys.custom);
 
-  if (!apiKey) {
+  if (!hasAnyKey) {
     const requiredCredits = agentsData.slice(startIdx).reduce((sum, agent) => {
       return sum + calcCredits(RANK_TOKEN_LIMITS[getAgentRankLabel(agent, preState)] || 2000);
     }, 0);
@@ -764,10 +820,23 @@ const simulateRun = async (startAgentId) => {
     let tokens = 0;
     const t0 = Date.now();
 
-    if (apiKey) {
+    /* 이 스텝의 모델과 프로바이더 결정 */
+    const effectiveModel = (override && override.model) ? override.model : agent.model;
+    const stepProvider   = detectProvider(effectiveModel);
+    const stepApiKeys    = Store.get().apiKeys || {};
+    const stepEndpoint   = Store.get().customApiEndpoint || '';
+    const hasStepKey     = (
+      (stepProvider === 'claude'  && !!stepApiKeys.claude) ||
+      (stepProvider === 'openai'  && !!stepApiKeys.openai) ||
+      (stepProvider === 'custom'  && !!stepApiKeys.custom && !!stepEndpoint)
+    );
+    /* 스텝에 커스텀 모델명이 있으면 (pipeline-editor에서 설정) */
+    const stepCustomModelId = agent.stepCustomModelId || '';
+
+    if (hasStepKey) {
       /* ── 실제 AI 생성 ── */
       try {
-        const result    = await callAI(resolvedPrompt, agent.model, apiKey);
+        const result    = await callAI(resolvedPrompt, effectiveModel, stepCustomModelId);
         generatedContent = result.text;
         tokens           = result.tokens;
       } catch (err) {
@@ -884,6 +953,19 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /* ─── DOM 준비 후 초기화 ─── */
 document.addEventListener('DOMContentLoaded', () => {
+  /* ── 하위 호환 마이그레이션: 구 apiKey → apiKeys.claude / apiKeys.openai ── */
+  const legacyKey = Store.get().apiKey || '';
+  if (legacyKey) {
+    const existing = Store.get().apiKeys || {};
+    if (!existing.claude && !existing.openai) {
+      if (legacyKey.startsWith('sk-ant-')) {
+        Store.set({ apiKeys: { ...existing, claude: legacyKey } });
+      } else if (legacyKey.startsWith('sk-')) {
+        Store.set({ apiKeys: { ...existing, openai: legacyKey } });
+      }
+    }
+  }
+
   init();
 
   /* 전체 실행 버튼 이벤트 */
@@ -1002,66 +1084,69 @@ document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('api-key-input');
     if (!input) return;
     const key = input.value.trim();
-    /* 지원하는 프로바이더 키 형식 검사 */
-    if (key && !detectProvider(key)) {
-      alert('지원하지 않는 API 키 형식입니다.\n- Claude: sk-ant-api03-...\n- OpenAI: sk-...');
-      return;
+
+    const state   = Store.get();
+    const apiKeys = state.apiKeys || {};
+
+    if (selectedProvider === 'custom') {
+      /* 커스텀: 엔드포인트·모델명도 함께 저장 */
+      const endpointInput = document.getElementById('custom-endpoint-input');
+      const modelInput    = document.getElementById('custom-model-input');
+      Store.set({
+        apiKeys: { ...apiKeys, custom: key },
+        customApiEndpoint: endpointInput?.value.trim() || '',
+        customModelId:     modelInput?.value.trim()    || '',
+      });
+    } else {
+      /* claude / openai */
+      Store.set({ apiKeys: { ...apiKeys, [selectedProvider]: key } });
     }
-    Store.set({ apiKey: key });
+
     updateApiKeyUI();
     input.value = '';
   });
 
-  /* API 키 삭제 버튼 */
+  /* API 키 삭제 버튼 (현재 선택된 프로바이더 키 삭제) */
   document.getElementById('api-key-clear-btn')?.addEventListener('click', () => {
-    Store.set({ apiKey: '' });
+    const state   = Store.get();
+    const apiKeys = state.apiKeys || {};
+    Store.set({ apiKeys: { ...apiKeys, [selectedProvider]: '' } });
     updateApiKeyUI();
   });
 });
 
 /** API 키 상태 UI 업데이트 */
 const updateApiKeyUI = () => {
-  const statusEl   = document.getElementById('api-key-status');
-  const clearBtn   = document.getElementById('api-key-clear-btn');
-  const inputEl    = document.getElementById('api-key-input');
-  const subtitleEl = document.getElementById('api-key-subtitle');
-  const linkRow    = document.getElementById('api-key-link-row');
-  const linkEl     = document.getElementById('api-key-link');
-  const apiKey     = Store.get().apiKey || '';
-  const hasKey     = !!apiKey;
-  const provider   = detectProvider(apiKey);
-  const providerLabel = provider === 'openai' ? 'OpenAI' : 'Claude';
+  const statusEl  = document.getElementById('api-key-status');
+  const clearBtn  = document.getElementById('api-key-clear-btn');
+  const inputEl   = document.getElementById('api-key-input');
+  const state     = Store.get();
+  const apiKeys   = state.apiKeys || {};
+
+  /* 연결된 프로바이더 목록 */
+  const connectedLabels = [
+    apiKeys.claude ? 'Claude' : null,
+    apiKeys.openai ? 'OpenAI' : null,
+    apiKeys.custom ? '커스텀' : null,
+  ].filter(Boolean);
+  const hasAnyKey = connectedLabels.length > 0;
 
   /* 연결 상태 배지 */
   if (statusEl) {
-    statusEl.className = `api-key-status ${hasKey ? 'connected' : 'disconnected'}`;
-    statusEl.textContent = hasKey ? `● ${providerLabel} 연결됨` : '○ 미연결 (목업 모드)';
+    statusEl.className = `api-key-status ${hasAnyKey ? 'connected' : 'disconnected'}`;
+    statusEl.textContent = hasAnyKey
+      ? `● ${connectedLabels.join(' · ')} 연결됨`
+      : '○ 미연결 (목업 모드)';
   }
-  if (clearBtn) clearBtn.style.display = hasKey ? 'inline-flex' : 'none';
 
-  if (hasKey) {
-    /* 키 저장됨: detectProvider로 탭 자동 동기화 */
-    const activeProvider = provider || selectedProvider;
+  /* 삭제 버튼: 현재 탭 프로바이더에 키가 있을 때만 표시 */
+  const curProviderHasKey = !!(apiKeys[selectedProvider] || '');
+  if (clearBtn) clearBtn.style.display = curProviderHasKey ? 'inline-flex' : 'none';
 
-    /* 탭 active 상태 동기화 */
-    document.querySelectorAll('.provider-tab').forEach(btn => {
-      const isActive = btn.dataset.provider === activeProvider;
-      btn.classList.toggle('active', isActive);
-      btn.setAttribute('aria-pressed', String(isActive));
-    });
-
+  if (curProviderHasKey) {
     if (inputEl) inputEl.placeholder = '새 키로 교체하려면 입력...';
-
-    /* 발급 링크: 저장된 키의 provider 기준 */
-    if (linkRow && linkEl) {
-      const meta = PROVIDER_META[activeProvider] || {};
-      linkEl.href        = meta.link || '#';
-      linkEl.textContent = meta.linkLabel || 'API 키 발급하기 →';
-      linkEl.className   = `api-key-link provider-${activeProvider}`;
-      linkRow.style.display = 'block';
-    }
   } else {
-    /* 키 미입력: selectedProvider 탭 기준으로 UI 복원 */
+    /* 현재 탭 기준으로 placeholder·링크 복원 */
     applyProviderTab(selectedProvider);
   }
 };

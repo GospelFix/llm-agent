@@ -30,6 +30,7 @@ const ALL_MODELS = [
   { value: 'gpt-4o',            label: 'GPT-4o' },
   { value: 'gpt-4o-mini',       label: 'GPT-4o Mini' },
   { value: 'o1-mini',           label: 'O1 Mini' },
+  { value: 'custom',            label: '커스텀 (직접 입력)' },
 ];
 
 /* ─── 직급 목록 ─── */
@@ -78,7 +79,7 @@ const loadCurrentPipeline = async () => {
   const custom = stored.customPipeline;
 
   if (custom?.steps?.length) {
-    /* 저장된 커스텀 파이프라인 복원: agentData가 step에 임베드되어 있으면 그대로 사용 */
+    /* 저장된 커스텀 에이전트 복원: agentData가 step에 임베드되어 있으면 그대로 사용 */
     currentSteps = custom.steps
       .slice()
       .sort((a, b) => a.order - b.order)
@@ -86,17 +87,18 @@ const loadCurrentPipeline = async () => {
         /* agentData가 임베드된 경우 (크로스 에이전시 지원) */
         const base = step.agentData || agentsPool.find(a => a.id === step.agentId) || {};
         return {
-          agentId:      step.agentId,
-          _agencyFile:  step._agencyFile  || base._agencyFile  || '',
-          _agencyLabel: step._agencyLabel || base._agencyLabel || '',
-          _agencyIcon:  step._agencyIcon  || base._agencyIcon  || '',
-          name:         base.name         || step.agentId,
-          icon:         base.icon         || '🤖',
-          model:        step.model        || base.model        || 'claude-haiku-4-5',
-          rank:         step.rank         || base.rank         || '팀장',
-          outputFile:   step.outputFile   || base.outputFile   || step.agentId,
-          inputContext: step.inputContext || [],
-          agentData:    base,
+          agentId:          step.agentId,
+          _agencyFile:      step._agencyFile  || base._agencyFile  || '',
+          _agencyLabel:     step._agencyLabel || base._agencyLabel || '',
+          _agencyIcon:      step._agencyIcon  || base._agencyIcon  || '',
+          name:             base.name         || step.agentId,
+          icon:             base.icon         || '🤖',
+          model:            step.model        || base.model        || 'claude-haiku-4-5',
+          rank:             step.rank         || base.rank         || '팀장',
+          outputFile:       step.outputFile   || base.outputFile   || step.agentId,
+          inputContext:     step.inputContext || [],
+          stepCustomModelId: step.stepCustomModelId || '',
+          agentData:        base,
         };
       });
 
@@ -130,9 +132,15 @@ const renderStepList = () => {
 
   /* 각 스텝 이벤트 바인딩 */
   currentSteps.forEach((_, idx) => {
-    /* 모델 셀렉터 변경 */
+    /* 모델 셀렉터 변경 (custom 전환 시 모델명 입력 필드 표시를 위해 리렌더링) */
     document.getElementById(`step-model-${idx}`)?.addEventListener('change', (e) => {
       currentSteps[idx].model = e.target.value;
+      renderStepList(); // custom ↔ 일반 전환 시 커스텀 필드 표시 상태 갱신
+    });
+
+    /* 커스텀 모델명 입력 */
+    document.getElementById(`step-custom-model-${idx}`)?.addEventListener('input', (e) => {
+      currentSteps[idx].stepCustomModelId = e.target.value;
     });
 
     /* 직급 셀렉터 변경 */
@@ -181,6 +189,13 @@ const buildStepHTML = (step, idx) => {
     `<option value="${r.value}" ${r.value === step.rank ? 'selected' : ''}>${r.icon} ${r.value}</option>`
   ).join('');
 
+  /* 커스텀 모델명 입력 필드 (model === 'custom'일 때만 표시) */
+  const customModelInput = step.model === 'custom'
+    ? `<input type="text" id="step-custom-model-${idx}" class="step-select brand-input"
+              style="width:140px" value="${step.stepCustomModelId || ''}"
+              placeholder="llama-3.1-70b" aria-label="커스텀 모델명" />`
+    : '';
+
   /* 에이전시 출처 뱃지 */
   const agencyBadge = step._agencyLabel
     ? `<span class="step-agency-badge">${step._agencyIcon || ''} ${step._agencyLabel}</span>`
@@ -227,6 +242,7 @@ const buildStepHTML = (step, idx) => {
                 aria-label="모델 선택">
           ${modelOptions}
         </select>
+        ${customModelInput}
 
         <!-- 직급 셀렉터 -->
         <select id="step-rank-${idx}" class="step-select step-rank-select"
@@ -313,17 +329,18 @@ const updateAllContextValidity = () => {
 /* ─── 스텝 추가 (전체 에이전트 데이터 임베드) ─── */
 const addStep = (agent) => {
   currentSteps.push({
-    agentId:      agent.id,
-    _agencyFile:  agent._agencyFile  || '',
-    _agencyLabel: agent._agencyLabel || '',
-    _agencyIcon:  agent._agencyIcon  || '',
-    name:         agent.name,
-    icon:         agent.icon || '🤖',
-    model:        agent.model || 'claude-haiku-4-5',
-    rank:         agent.rank  || '팀장',
-    outputFile:   `${agent.outputFile || agent.id}_${currentSteps.length + 1}`,
-    inputContext: [],
-    agentData:    agent,   // 크로스 에이전시 식별을 위해 전체 데이터 임베드
+    agentId:          agent.id,
+    _agencyFile:      agent._agencyFile  || '',
+    _agencyLabel:     agent._agencyLabel || '',
+    _agencyIcon:      agent._agencyIcon  || '',
+    name:             agent.name,
+    icon:             agent.icon || '🤖',
+    model:            agent.model || 'claude-haiku-4-5',
+    rank:             agent.rank  || '팀장',
+    outputFile:       `${agent.outputFile || agent.id}_${currentSteps.length + 1}`,
+    inputContext:     [],
+    stepCustomModelId: '',  // 커스텀 모델명 (model === 'custom'일 때 사용)
+    agentData:        agent,   // 크로스 에이전시 식별을 위해 전체 데이터 임베드
   });
   closeModal();
   renderStepList();
@@ -387,19 +404,20 @@ const closeModal = () => {
 /* ─── 파이프라인 저장 ─── */
 const savePipeline = () => {
   const name = (document.getElementById('pipeline-name-input')?.value || '').trim()
-    || '커스텀 파이프라인';
+    || '커스텀 에이전트';
 
   const steps = currentSteps.map((step, idx) => ({
-    agentId:      step.agentId,
-    order:        idx,
-    model:        step.model,
-    rank:         step.rank,
-    outputFile:   step.outputFile,
-    inputContext: step.inputContext || [],
-    _agencyFile:  step._agencyFile,
-    _agencyLabel: step._agencyLabel,
-    _agencyIcon:  step._agencyIcon,
-    agentData:    step.agentData,  // 전체 에이전트 데이터 임베드 (pipeline.js에서 직접 사용)
+    agentId:          step.agentId,
+    order:            idx,
+    model:            step.model,
+    rank:             step.rank,
+    outputFile:       step.outputFile,
+    inputContext:     step.inputContext || [],
+    stepCustomModelId: step.stepCustomModelId || '',
+    _agencyFile:      step._agencyFile,
+    _agencyLabel:     step._agencyLabel,
+    _agencyIcon:      step._agencyIcon,
+    agentData:        step.agentData,  // 전체 에이전트 데이터 임베드 (pipeline.js에서 직접 사용)
   }));
 
   Store.set({
@@ -410,12 +428,12 @@ const savePipeline = () => {
     },
   });
 
-  showToast('✅ 커스텀 파이프라인이 저장되었습니다!');
+  showToast('✅ 커스텀 에이전트이 저장되었습니다!');
 };
 
 /* ─── 파이프라인 초기화 ─── */
 const resetPipeline = () => {
-  if (!confirm('커스텀 파이프라인을 초기화할까요?')) return;
+  if (!confirm('커스텀 에이전트을 초기화할까요?')) return;
 
   Store.set({ customPipeline: null });
   currentSteps = [];
