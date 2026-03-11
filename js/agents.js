@@ -285,6 +285,10 @@ const renderAgentList = () => {
   const listHTML = agentsData.map(agent => {
     const override = state.agentOverrides[agent.id] || {};
     const modelName = override.model || agent.model;
+    /* 커스텀 프로바이더이고 모델명을 직접 입력한 경우 실제 모델명 표시 */
+    const displayModel = (override.provider === 'custom' && override.customModelName)
+      ? override.customModelName
+      : modelName;
     const provider = PROVIDER_MODELS[override.provider || detectProvider(modelName)];
     const rankValue = override.rank || rankLabelToValue(agent.rank);
     const rankOption = RANK_OPTIONS.find(r => r.value === rankValue) || RANK_OPTIONS[1];
@@ -305,7 +309,7 @@ const renderAgentList = () => {
           <div class="setting-card-desc">${agent.desc}</div>
         </div>
         <div class="setting-card-meta">
-          <div class="setting-card-model">${provider?.icon || ''} ${modelName}</div>
+          <div class="setting-card-model">${provider?.icon || ''} ${displayModel}</div>
           <div class="setting-card-multiplier" style="color:var(${rankOption.colorVar})">${tokenText}</div>
         </div>
       </div>
@@ -395,13 +399,25 @@ const renderEditPanel = (agentId) => {
           </select>
         </div>
 
-        <!-- ② Model (Provider 변경 시 동적 갱신) -->
-        <div class="form-group">
+        <!-- ② Model (Provider 변경 시 동적 갱신 / custom 선택 시 숨김) -->
+        <div class="form-group" id="model-select-group"
+             style="display:${effectiveProvider === 'custom' ? 'none' : 'block'}">
           <label class="form-label" for="model-select">Model</label>
           <select class="form-select" id="model-select" aria-label="모델 선택">
             ${modelOptionsHTML}
           </select>
           <div class="form-hint" id="model-hint">${getModelHint(effectiveProvider, currentModel)}</div>
+        </div>
+
+        <!-- ② 커스텀 모델명 입력 (custom provider 선택 시만 표시) -->
+        <div class="form-group" id="custom-model-name-group"
+             style="display:${effectiveProvider === 'custom' ? 'block' : 'none'}">
+          <label class="form-label" for="custom-model-name-input">커스텀 모델명</label>
+          <input type="text" class="form-select" id="custom-model-name-input"
+                 placeholder="llama-3.1-70b, mixtral-8x7b ..."
+                 value="${effectiveProvider === 'custom' ? (override.customModelName || '') : ''}"
+                 aria-label="커스텀 모델명 직접 입력" />
+          <div class="form-hint">API 엔드포인트에서 사용할 모델 ID를 입력하세요</div>
         </div>
       </div>
 
@@ -454,13 +470,24 @@ const renderEditPanel = (agentId) => {
     notice.style.display = hasAnyKey ? 'none' : 'flex';
   };
 
-  /* Provider 변경 → Model 옵션 동적 갱신 + API 키 안내 */
+  /* Provider 변경 → Model 셀렉트 숨김/표시 + 커스텀 모델명 필드 토글 + API 키 안내 */
   panel.querySelector('#provider-select').addEventListener('change', (e) => {
-    const newProvider = e.target.value;
-    const modelSelect = panel.querySelector('#model-select');
-    const modelHint = panel.querySelector('#model-hint');
-    modelSelect.innerHTML = buildModelOptions(newProvider, null);
-    modelHint.textContent = getModelHint(newProvider, modelSelect.value);
+    const newProvider      = e.target.value;
+    const isCustom         = newProvider === 'custom';
+    const modelSelectGroup = panel.querySelector('#model-select-group');
+    const modelSelect      = panel.querySelector('#model-select');
+    const modelHint        = panel.querySelector('#model-hint');
+    const customGroup      = panel.querySelector('#custom-model-name-group');
+
+    /* 커스텀 provider: 모델 셀렉트 숨기고 텍스트 입력 표시 */
+    if (modelSelectGroup) modelSelectGroup.style.display = isCustom ? 'none' : 'block';
+    if (customGroup)      customGroup.style.display      = isCustom ? 'block' : 'none';
+
+    if (!isCustom) {
+      modelSelect.innerHTML = buildModelOptions(newProvider, null);
+      modelHint.textContent = getModelHint(newProvider, modelSelect.value);
+    }
+
     showApiKeyNoticeIfNeeded();
   });
 
@@ -547,15 +574,22 @@ const renderEmptyPanel = () => {
 
 /* ─── 에이전트 설정 저장 ─── */
 const saveAgent = (agentId) => {
-  const providerSelect = document.getElementById('provider-select');
-  const modelSelect    = document.getElementById('model-select');
-  const rankSelect     = document.getElementById('rank-select');
+  const providerSelect      = document.getElementById('provider-select');
+  const modelSelect         = document.getElementById('model-select');
+  const rankSelect          = document.getElementById('rank-select');
+  const customModelInput    = document.getElementById('custom-model-name-input');
   if (!providerSelect || !modelSelect || !rankSelect) return;
 
+  /* 커스텀 provider인 경우 입력된 모델명을 customModelName에 저장 */
+  const customModelName = providerSelect.value === 'custom'
+    ? (customModelInput?.value.trim() || '')
+    : '';
+
   Store.setAgentOverride(agentId, {
-    provider:     providerSelect.value,
-    model:        modelSelect.value,
-    rank:         rankSelect.value,
+    provider:        providerSelect.value,
+    model:           modelSelect.value,
+    rank:            rankSelect.value,
+    customModelName,
   });
 
   renderAgentList();

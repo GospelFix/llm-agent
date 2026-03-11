@@ -830,8 +830,8 @@ const simulateRun = async (startAgentId) => {
       (stepProvider === 'openai'  && !!stepApiKeys.openai) ||
       (stepProvider === 'custom'  && !!stepApiKeys.custom && !!stepEndpoint)
     );
-    /* 스텝에 커스텀 모델명이 있으면 (pipeline-editor에서 설정) */
-    const stepCustomModelId = agent.stepCustomModelId || '';
+    /* 커스텀 모델명: pipeline-editor stepCustomModelId → agents.js override → Store customModelId 순서로 폴백 */
+    const stepCustomModelId = agent.stepCustomModelId || override.customModelName || '';
 
     if (hasStepKey) {
       /* ── 실제 AI 생성 ── */
