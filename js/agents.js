@@ -152,12 +152,9 @@ const loadAgency = async (file) => {
   const layout = document.getElementById('agents-layout');
   if (layout) layout.style.display = 'grid';
 
-  /* 파이프라인 적용 버튼 표시 + 텍스트 갱신 */
-  const meta     = AGENCY_META[file] || AGENCY_META['agents.json'];
-  const applyWrap = document.getElementById('apply-agency-wrap');
-  const applyBtn  = document.getElementById('apply-agency-btn');
-  if (applyWrap) applyWrap.style.display = 'flex';
-  if (applyBtn)  applyBtn.textContent = `"${meta.title}" 파이프라인에 적용 →`;
+  /* 헤더 저장 버튼 표시 */
+  const applyBtn = document.getElementById('apply-agency-btn');
+  if (applyBtn) applyBtn.style.display = '';
 };
 
 /** 에이전시 유형 선택 카드 렌더링 */
