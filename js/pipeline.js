@@ -602,14 +602,27 @@ const callAI = async (prompt, model, stepCustomModelId) => {
   const apiKeys  = state.apiKeys || {};
   const provider = detectProvider(model);
 
-  if (provider === 'openai') {
-    return callOpenAIAPI(prompt, model, apiKeys.openai || '');
-  }
-  if (provider === 'custom') {
+  /* 해당 provider 키가 있으면 정상 호출 */
+  if (provider === 'openai' && apiKeys.openai)
+    return callOpenAIAPI(prompt, model, apiKeys.openai);
+  if (provider === 'custom' && apiKeys.custom) {
     const effectiveModel = stepCustomModelId || state.customModelId || 'llama-3.1-70b';
-    return callCustomAPI(prompt, effectiveModel, apiKeys.custom || '', state.customApiEndpoint || '');
+    return callCustomAPI(prompt, effectiveModel, apiKeys.custom, state.customApiEndpoint || '');
   }
-  return callClaudeAPI(prompt, model, apiKeys.claude || '');
+  if (provider === 'claude' && apiKeys.claude)
+    return callClaudeAPI(prompt, model, apiKeys.claude);
+
+  /* ── 폴백: 해당 provider 키 없으면 사용 가능한 키로 대체 ── */
+  if (apiKeys.openai)
+    return callOpenAIAPI(prompt, 'gpt-4o-mini', apiKeys.openai);
+  if (apiKeys.claude)
+    return callClaudeAPI(prompt, 'claude-haiku-4-5', apiKeys.claude);
+  if (apiKeys.custom && state.customApiEndpoint) {
+    const effectiveModel = stepCustomModelId || state.customModelId || 'llama-3.1-70b';
+    return callCustomAPI(prompt, effectiveModel, apiKeys.custom, state.customApiEndpoint);
+  }
+
+  throw new Error('사용 가능한 API 키 없음');
 };
 
 /* ─── 입력값 기반 템플릿 아웃풋 (API 키 없을 때) ─── */
@@ -992,10 +1005,13 @@ const simulateRun = async (startAgentId) => {
       (stepProvider === 'openai'  && !!stepApiKeys.openai) ||
       (stepProvider === 'custom'  && !!stepApiKeys.custom && !!stepEndpoint)
     );
+    /* 폴백: 해당 provider 키 없어도 다른 키가 존재하면 callAI 진입 허용 */
+    const anyKeyExists = !!stepApiKeys.claude || !!stepApiKeys.openai ||
+      (!!stepApiKeys.custom && !!stepEndpoint);
     /* 커스텀 모델명: pipeline-editor stepCustomModelId → agents.js override → Store customModelId 순서로 폴백 */
     const stepCustomModelId = agent.stepCustomModelId || override.customModelName || '';
 
-    if (hasStepKey) {
+    if (hasStepKey || anyKeyExists) {
       /* ── 실제 AI 생성 ── */
       try {
         const result    = await callAI(resolvedPrompt, effectiveModel, stepCustomModelId);
