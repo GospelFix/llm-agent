@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Skills 가이드 — llm agent</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/skills-guide.css">
+</head>
+<body>
+
+<!-- 모바일 햄버거 메뉴 -->
+<button class="hamburger" id="hamburger-btn" aria-label="메뉴 열기">☰</button>
+
+<!-- 사이드바 (app.js가 동적 생성) -->
+<aside class="sidebar" id="sidebar" role="navigation" aria-label="주 내비게이션"></aside>
+
+<main class="main" role="main">
+
+  <!-- 페이지 헤더 -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Claude Skills <span>가이드</span></h1>
+      <p class="page-subtitle">Claude Code 스킬 시스템의 구조, 작성법, 베스트 프랙티스를 정리합니다</p>
+    </div>
+    <a href="https://code.claude.com/docs/ko/skills" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">공식 문서 →</a>
+  </div>
+
+  <!-- TOC 탭바 — 섹션 이동용 -->
+  <div class="skills-toc" role="tablist" aria-label="섹션 이동">
+    <button class="skills-toc-btn active" data-target="s1">스킬이란?</button>
+    <button class="skills-toc-btn" data-target="s2">파일 구조</button>
+    <button class="skills-toc-btn" data-target="s3">SKILL.md 구성</button>
+    <button class="skills-toc-btn" data-target="s4">Description 필드</button>
+    <button class="skills-toc-btn" data-target="s5">컨텍스트 로딩</button>
+    <button class="skills-toc-btn" data-target="s6">프론트매터 레퍼런스</button>
+    <button class="skills-toc-btn" data-target="s7">지시문 작성법</button>
+    <button class="skills-toc-btn" data-target="s8">고급 패턴</button>
+    <button class="skills-toc-btn" data-target="s9">테스트 & 이터레이션</button>
+    <button class="skills-toc-btn" data-target="s10">10가지 핵심 규칙</button>
+  </div>
+
+  <!-- 본문 + 우측 목차 레이아웃 -->
+  <div class="skills-layout">
+
+    <!-- ── 본문 컬럼 ── -->
+    <div class="skills-content">
+
+      <!-- §1 스킬이란? -->
+      <div class="skills-section card" id="s1">
+        <div class="section-title-row">
+          <span class="section-badge">1</span>
+          <h2 class="section-heading">스킬이란?</h2>
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:16px">
+          스킬(Skill)은 Claude Code가 특정 명령(<span class="inline-code">/skill-name</span>)을 받았을 때 실행하는
+          <strong>재사용 가능한 프롬프트 템플릿</strong>입니다. 마크다운 파일에 프론트매터와 지시문을 작성하면,
+          Claude Code가 이를 자동으로 인식하고 슬래시 명령으로 노출합니다.
+        </p>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-card-icon">⚡</div>
+            <div class="feature-card-title">즉시 실행</div>
+            <div class="feature-card-desc"><span class="inline-code">/commit</span> 한 번으로 커밋 메시지 자동 생성 등 반복 작업을 즉시 실행</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">🔁</div>
+            <div class="feature-card-title">재사용 가능</div>
+            <div class="feature-card-desc">한 번 작성하면 팀 전체가 동일한 동작을 공유. 프로젝트별 커스터마이징 지원</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">📦</div>
+            <div class="feature-card-title">점진적 컨텍스트</div>
+            <div class="feature-card-desc">필요할 때만 파일을 읽어 컨텍스트 창 낭비 없이 관련 정보만 로드</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">🧩</div>
+            <div class="feature-card-title">조합 가능</div>
+            <div class="feature-card-desc">스킬 안에서 다른 스킬을 호출하거나 파이프라인 형태로 연결 가능</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- §2 파일 구조 -->
+      <div class="skills-section card" id="s2">
+        <div class="section-title-row">
+          <span class="section-badge">2</span>
+          <h2 class="section-heading">파일 구조</h2>
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:8px">
+          스킬 파일은 <span class="inline-code">.claude/skills/</span> 또는 프로젝트 루트의
+          <span class="inline-code">.claude/commands/</span> 디렉토리에 위치합니다.
+        </p>
+        <div class="code-block"><span class="comment"># 프로젝트 스킬 (팀 공유용)</span>
+<span class="key">project-root/</span>
+├── <span class="value">.claude/</span>
+│   ├── <span class="value">skills/</span>
+│   │   ├── <span class="string">commit.md</span>        <span class="comment"># /commit 슬래시 명령</span>
+│   │   ├── <span class="string">review-pr.md</span>     <span class="comment"># /review-pr 슬래시 명령</span>
+│   │   └── <span class="string">test-runner.md</span>   <span class="comment"># /test-runner 슬래시 명령</span>
+│   └── <span class="value">CLAUDE.md</span>           <span class="comment"># 프로젝트 전역 지시문</span>
+
+<span class="comment"># 개인 전용 스킬 (글로벌)</span>
+<span class="key">~/.claude/</span>
+└── <span class="value">skills/</span>
+    └── <span class="string">my-skill.md</span>          <span class="comment"># 모든 프로젝트에서 사용 가능</span></div>
+      </div>
+
+      <!-- §3 SKILL.md 구성 -->
+      <div class="skills-section card" id="s3">
+        <div class="section-title-row">
+          <span class="section-badge">3</span>
+          <h2 class="section-heading">SKILL.md 구성</h2>
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:8px">
+          스킬 파일은 <strong>YAML 프론트매터</strong>와 <strong>마크다운 본문(지시문)</strong>으로 구성됩니다.
+        </p>
+        <div class="code-block"><span class="comment">---</span>
+<span class="key">name</span><span class="punct">:</span> <span class="string">commit</span>
+<span class="key">description</span><span class="punct">:</span> <span class="string">스테이징된 변경사항을 분석해 커밋 메시지를 자동 생성하고 커밋합니다</span>
+<span class="key">tools</span><span class="punct">:</span>
+  <span class="punct">-</span> <span class="value">Read</span>
+  <span class="punct">-</span> <span class="value">Bash</span>
+<span class="key">model</span><span class="punct">:</span> <span class="string">claude-haiku-4-5-20251001</span>
+<span class="comment">---</span>
+
+<span class="comment"># 커밋 지시문</span>
+
+1. `git diff --staged`로 변경 내용을 확인합니다
+2. 변경 유형을 분류합니다: feat / fix / refactor / docs / chore
+3. 한국어로 간결한 커밋 메시지를 작성합니다
+4. `git commit -m "메시지"` 로 커밋을 실행합니다</div>
+      </div>
+
+      <!-- §4 Description 필드 -->
+      <div class="skills-section card" id="s4">
+        <div class="section-title-row">
+          <span class="section-badge">4</span>
+          <h2 class="section-heading">Description 필드 — 핵심</h2>
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:12px">
+          <span class="inline-code">description</span>은 Claude가 <em>언제 이 스킬을 호출할지</em> 판단하는 유일한 근거입니다.
+          에이전트 모드에서 자동 라우팅되므로 정확하고 구체적으로 작성해야 합니다.
+        </p>
+
+        <!-- 나쁜 예 / 좋은 예 -->
+        <div class="example-pair">
+          <div class="example-bad">
+            <div class="example-label">❌ 나쁜 예</div>
+            <div class="code-block">description: 커밋 도구</div>
+            <div class="code-block">description: 코드 리뷰</div>
+            <div class="code-block">description: 테스트 실행</div>
+          </div>
+          <div class="example-good">
+            <div class="example-label">✅ 좋은 예</div>
+            <div class="code-block">description: 스테이징된 변경사항을
+분석해 한국어 커밋 메시지를
+자동 생성하고 커밋합니다</div>
+            <div class="code-block">description: PR의 diff를 읽고
+보안·성능·가독성 관점에서
+코드 리뷰 코멘트를 생성합니다</div>
+          </div>
+        </div>
+
+        <!-- 4요소 테이블 -->
+        <p style="font-size:12px;color:var(--text-dim);margin:16px 0 8px;font-weight:600">좋은 Description의 4요소</p>
+        <table class="field-table">
+          <thead>
+            <tr><th>요소</th><th>설명</th><th>예시</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>대상</strong></td>
+              <td>무엇을 입력으로 받는가</td>
+              <td>스테이징된 변경사항, PR의 diff, 테스트 파일</td>
+            </tr>
+            <tr>
+              <td><strong>동작</strong></td>
+              <td>무슨 작업을 하는가</td>
+              <td>분석, 생성, 실행, 검증</td>
+            </tr>
+            <tr>
+              <td><strong>결과</strong></td>
+              <td>무엇을 출력/수행하는가</td>
+              <td>커밋 메시지 작성, 리뷰 코멘트 생성</td>
+            </tr>
+            <tr>
+              <td><strong>컨텍스트</strong></td>
+              <td>어떤 규칙/제약이 있는가 (선택)</td>
+              <td>한국어로, Conventional Commits 형식으로</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- §5 점진적 컨텍스트 로딩 -->
+      <div class="skills-section card" id="s5">
+        <div class="section-title-row">
+          <span class="section-badge">5</span>
+          <h2 class="section-heading">점진적 컨텍스트 로딩</h2>
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:12px">
+          Claude Code는 스킬 실행 시 모든 파일을 한 번에 로드하지 않습니다.
+          <strong>3단계 점진적 로딩</strong>으로 컨텍스트 창을 효율적으로 사용합니다.
+        </p>
+        <table class="context-table">
+          <thead>
+            <tr><th>단계</th><th>로드 시점</th><th>내용</th><th>용도</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="ctx-step">STEP 1</span></td>
+              <td>항상 (대화 시작)</td>
+              <td>프론트매터 <span class="inline-code">description</span></td>
+              <td>라우팅 결정 — 이 스킬을 쓸지 판단</td>
+            </tr>
+            <tr>
+              <td><span class="ctx-step">STEP 2</span></td>
+              <td>스킬 호출 시</td>
+              <td>SKILL.md 전체 본문</td>
+              <td>지시문 실행 — 실제 작업 수행</td>
+            </tr>
+            <tr>
+              <td><span class="ctx-step">STEP 3</span></td>
+              <td>지시문 내 명시 시</td>
+              <td><span class="inline-code">$INCLUDE</span> 된 외부 파일</td>
+              <td>대용량 레퍼런스 (스타일 가이드, 스키마 등)</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="code-block" style="margin-top:16px"><span class="comment"># $INCLUDE 활용 예시</span>
+<span class="key">코딩 컨벤션</span>을 참고해 리뷰합니다:
+
+<span class="value">$INCLUDE</span> <span class="string">.claude/docs/coding-conventions.md</span>
+
+위 가이드라인에 따라 아래 항목을 검토하세요:</div>
+      </div>
+
+      <!-- §6 프론트매터 필드 레퍼런스 -->
+      <div class="skills-section card" id="s6">
+        <div class="section-title-row">
+          <span class="section-badge">6</span>
+          <h2 class="section-heading">프론트매터 필드 레퍼런스</h2>
+        </div>
+        <table class="field-table">
+          <thead>
+            <tr><th>필드</th><th>필수</th><th>타입</th><th>설명</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>name</code></td>
+              <td><span class="field-required">필수</span></td>
+              <td>string</td>
+              <td>슬래시 명령명. 파일명과 일치시키는 것을 권장</td>
+            </tr>
+            <tr>
+              <td><code>description</code></td>
+              <td><span class="field-required">필수</span></td>
+              <td>string</td>
+              <td>에이전트 라우팅에 사용. 구체적이고 동작 중심으로 작성</td>
+            </tr>
+            <tr>
+              <td><code>tools</code></td>
+              <td><span class="field-optional">선택</span></td>
+              <td>string[]</td>
+              <td>허용 도구 목록. 미지정 시 모든 도구 허용</td>
+            </tr>
+            <tr>
+              <td><code>model</code></td>
+              <td><span class="field-optional">선택</span></td>
+              <td>string</td>
+              <td>스킬별 모델 오버라이드. 기본값: 현재 설정 모델</td>
+            </tr>
+            <tr>
+              <td><code>args</code></td>
+              <td><span class="field-optional">선택</span></td>
+              <td>string</td>
+              <td>스킬 실행 시 전달받는 인자 설명. <code>$ARGUMENTS</code>로 본문에서 참조</td>
+            </tr>
+            <tr>
+              <td><code>isolation</code></td>
+              <td><span class="field-optional">선택</span></td>
+              <td>string</td>
+              <td><code>"worktree"</code> 설정 시 Git worktree 격리 환경에서 실행</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- §7 좋은 지시문 작성법 -->
+      <div class="skills-section card" id="s7">
+        <div class="section-title-row">
+          <span class="section-badge">7</span>
+          <h2 class="section-heading">좋은 지시문 작성법</h2>
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:16px">
+          스킬 본문의 지시문은 Claude가 <strong>단계별로 따를 절차</strong>를 정의합니다. 5가지 원칙을 지키면 일관된 결과를 얻을 수 있습니다.
+        </p>
+
+        <div class="pattern-block">
+          <div class="pattern-title">원칙 1 — 번호 순서로 단계 명시</div>
+          <div class="pattern-desc">Claude는 번호가 매겨진 목록을 순서대로 따릅니다. 순서가 중요한 작업은 반드시 번호 목록으로 작성하세요.</div>
+          <div class="code-block">1. `git status`로 변경 파일 목록 확인
+2. `git diff --staged`로 변경 내용 분석
+3. 커밋 유형 결정 (feat/fix/refactor/docs)
+4. 커밋 메시지 작성 및 실행</div>
+        </div>
+
+        <div class="pattern-block">
+          <div class="pattern-title">원칙 2 — 출력 형식 명시</div>
+          <div class="pattern-desc">결과물의 언어, 포맷, 길이를 명시적으로 지정하면 일관성이 높아집니다.</div>
+          <div class="code-block"><span class="comment"># 출력 형식 지정 예시</span>
+응답은 **한국어**로 작성합니다.
+리뷰 코멘트는 다음 형식을 사용합니다:
+- 🔴 필수 수정: [내용]
+- 🟡 개선 권장: [내용]
+- 🟢 좋은 점: [내용]</div>
+        </div>
+
+        <div class="pattern-block">
+          <div class="pattern-title">원칙 3 — 조건 분기 명시</div>
+          <div class="pattern-desc">예외 상황을 미리 정의하면 Claude가 불확실한 상황에서도 올바르게 행동합니다.</div>
+          <div class="code-block">스테이징된 변경사항이 없으면:
+  → "커밋할 내용이 없습니다"를 출력하고 종료
+
+테스트 파일만 변경된 경우:
+  → "test:" 접두어를 사용합니다</div>
+        </div>
+
+        <div class="pattern-block">
+          <div class="pattern-title">원칙 4 — $ARGUMENTS 활용</div>
+          <div class="pattern-desc">사용자가 슬래시 명령과 함께 전달한 텍스트를 <span class="inline-code">$ARGUMENTS</span>로 참조합니다.</div>
+          <div class="code-block"><span class="comment">---</span>
+<span class="key">args</span><span class="punct">:</span> <span class="string">PR 번호 또는 브랜치명 (선택)</span>
+<span class="comment">---</span>
+
+<span class="comment"># 사용: /review-pr 123 또는 /review-pr feature/auth</span>
+
+리뷰 대상: <span class="value">$ARGUMENTS</span>
+$ARGUMENTS가 없으면 현재 브랜치를 기준으로 합니다.</div>
+        </div>
+
+        <div class="pattern-block">
+          <div class="pattern-title">원칙 5 — 확인 게이트 추가</div>
+          <div class="pattern-desc">되돌릴 수 없는 작업(배포, 삭제 등) 전에 사용자 확인 단계를 명시합니다.</div>
+          <div class="code-block">배포 전 반드시 확인을 요청합니다:
+"⚠️ [환경]에 배포하시겠습니까? (y/n)"
+사용자가 'y'를 입력했을 때만 계속합니다.</div>
+        </div>
+      </div>
+
+      <!-- §8 고급 패턴 -->
+      <div class="skills-section card" id="s8">
+        <div class="section-title-row">
+          <span class="section-badge">8</span>
+          <h2 class="section-heading">고급 패턴</h2>
+        </div>
+
+        <div class="pattern-block">
+          <div class="pattern-title">패턴 A — 스킬 체이닝</div>
+          <div class="pattern-desc">한 스킬의 결과를 다음 스킬의 입력으로 연결합니다. Agent SDK의 파이프라인과 유사한 구조입니다.</div>
+          <div class="code-block"><span class="comment">---</span>
+<span class="key">name</span><span class="punct">:</span> <span class="string">ship</span>
+<span class="key">description</span><span class="punct">:</span> <span class="string">테스트 실행 → 커밋 → PR 생성을 순서대로 수행합니다</span>
+<span class="comment">---</span>
+
+1. <span class="value">/test-runner</span> 를 실행하고 모든 테스트가 통과하면 계속합니다
+2. <span class="value">/commit</span> 을 실행해 변경사항을 커밋합니다
+3. <span class="value">/create-pr</span> 을 실행해 PR을 생성합니다</div>
+        </div>
+
+        <div class="pattern-block">
+          <div class="pattern-title">패턴 B — Worktree 격리 실행</div>
+          <div class="pattern-desc">위험한 작업은 별도 Git worktree에서 실행해 메인 브랜치를 보호합니다.</div>
+          <div class="code-block"><span class="comment">---</span>
+<span class="key">name</span><span class="punct">:</span> <span class="string">safe-refactor</span>
+<span class="key">description</span><span class="punct">:</span> <span class="string">격리된 환경에서 리팩토링을 수행하고 결과를 PR로 제출합니다</span>
+<span class="key">isolation</span><span class="punct">:</span> <span class="string">worktree</span>
+<span class="comment">---</span>
+
+격리된 worktree에서 리팩토링을 수행합니다.
+완료 후 변경사항을 커밋하고 PR 링크를 반환합니다.</div>
+        </div>
+
+        <div class="pattern-block">
+          <div class="pattern-title">패턴 C — 조건부 도구 허용</div>
+          <div class="pattern-desc">스킬마다 허용 도구를 제한해 의도치 않은 부작용을 방지합니다.</div>
+          <div class="code-block"><span class="comment">---</span>
+<span class="key">name</span><span class="punct">:</span> <span class="string">analyze-only</span>
+<span class="key">description</span><span class="punct">:</span> <span class="string">코드베이스를 분석하고 보고서를 생성합니다. 파일을 수정하지 않습니다</span>
+<span class="key">tools</span><span class="punct">:</span>            <span class="comment"># 읽기 전용 도구만 허용</span>
+  <span class="punct">-</span> <span class="value">Read</span>
+  <span class="punct">-</span> <span class="value">Glob</span>
+  <span class="punct">-</span> <span class="value">Grep</span>
+<span class="comment">---</span></div>
+        </div>
+      </div>
+
+      <!-- §9 테스트 & 이터레이션 -->
+      <div class="skills-section card" id="s9">
+        <div class="section-title-row">
+          <span class="section-badge">9</span>
+          <h2 class="section-heading">테스트 & 이터레이션</h2>
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:16px">
+          스킬은 작성 후 반드시 검증이 필요합니다. 아래 5단계 프로세스로 안정적인 스킬을 만드세요.
+        </p>
+        <div class="process-steps">
+          <div class="process-step">
+            <div class="process-step-num">1</div>
+            <div class="process-step-content">
+              <strong>초안 작성</strong>
+              <p>최소한의 지시문으로 시작합니다. 처음부터 완벽하게 만들려 하지 마세요.</p>
+            </div>
+          </div>
+          <div class="process-step">
+            <div class="process-step-num">2</div>
+            <div class="process-step-content">
+              <strong>실제 환경에서 실행</strong>
+              <p>테스트 레포지토리가 아닌 실제 프로젝트에서 <span class="inline-code">/skill-name</span>으로 실행합니다.</p>
+            </div>
+          </div>
+          <div class="process-step">
+            <div class="process-step-num">3</div>
+            <div class="process-step-content">
+              <strong>결과 분석</strong>
+              <p>의도한 동작과 다른 부분을 기록합니다. 특히 누락된 단계, 잘못된 형식, 예외 미처리를 확인합니다.</p>
+            </div>
+          </div>
+          <div class="process-step">
+            <div class="process-step-num">4</div>
+            <div class="process-step-content">
+              <strong>지시문 구체화</strong>
+              <p>모호한 표현을 명확하게 수정합니다. 반복되는 오류 패턴은 명시적 제약으로 추가합니다.</p>
+            </div>
+          </div>
+          <div class="process-step">
+            <div class="process-step-num">5</div>
+            <div class="process-step-content">
+              <strong>3회 이상 안정 확인</strong>
+              <p>동일한 입력에 대해 일관된 결과가 나오면 팀에 공유합니다. Git에 커밋해 버전 관리합니다.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- §10 10가지 핵심 규칙 -->
+      <div class="skills-section card" id="s10">
+        <div class="section-title-row">
+          <span class="section-badge">10</span>
+          <h2 class="section-heading">10가지 핵심 규칙</h2>
+        </div>
+        <div class="rule-grid">
+          <div class="rule-card">
+            <div class="rule-card-num">1</div>
+            <div class="rule-card-text"><strong>description은 동작 중심으로</strong> — "무엇을 하는가"를 동사로 시작해 명확히 서술합니다</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-card-num">2</div>
+            <div class="rule-card-text"><strong>파일명 = 명령명</strong> — <span class="inline-code">commit.md</span>는 <span class="inline-code">/commit</span>으로 호출됩니다. 일관성을 유지하세요</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-card-num">3</div>
+            <div class="rule-card-text"><strong>단일 책임 원칙</strong> — 한 스킬은 한 가지 일만 합니다. 여러 작업은 체이닝으로 연결하세요</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-card-num">4</div>
+            <div class="rule-card-text"><strong>도구 최소 허용</strong> — 필요한 도구만 <span class="inline-code">tools</span>에 나열해 부작용을 방지합니다</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-card-num">5</div>
+            <div class="rule-card-text"><strong>출력 언어 명시</strong> — 한국어/영어 혼용을 막으려면 응답 언어를 지시문에 명시하세요</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-card-num">6</div>
+            <div class="rule-card-text"><strong>확인 게이트 필수</strong> — 배포, 삭제 등 되돌릴 수 없는 작업 전에 반드시 확인을 요청합니다</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-card-num">7</div>
+            <div class="rule-card-text"><strong>$INCLUDE 적극 활용</strong> — 대용량 레퍼런스는 별도 파일로 분리해 컨텍스트 창을 절약합니다</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-card-num">8</div>
+            <div class="rule-card-text"><strong>예외 상황 명시</strong> — "~이 없으면", "~인 경우" 분기를 지시문에 명확히 정의합니다</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-card-num">9</div>
+            <div class="rule-card-text"><strong>Git으로 버전 관리</strong> — 스킬 파일도 코드입니다. 변경 이력을 커밋으로 추적하세요</div>
+          </div>
+          <div class="rule-card">
+            <div class="rule-card-num">10</div>
+            <div class="rule-card-text"><strong>실사용 후 이터레이션</strong> — 실제 환경에서 3회 이상 안정 확인 후 팀에 공유합니다</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /skills-content -->
+
+    <!-- ── 우측 고정 목차 ── -->
+    <nav class="toc-fixed" aria-label="페이지 내 목차">
+      <div class="toc-fixed-title">목차</div>
+      <a href="#s1"  class="toc-fixed-link active">스킬이란?</a>
+      <a href="#s2"  class="toc-fixed-link">파일 구조</a>
+      <a href="#s3"  class="toc-fixed-link">SKILL.md 구성</a>
+      <a href="#s4"  class="toc-fixed-link">Description 필드</a>
+      <a href="#s5"  class="toc-fixed-link">컨텍스트 로딩</a>
+      <a href="#s6"  class="toc-fixed-link">프론트매터 레퍼런스</a>
+      <a href="#s7"  class="toc-fixed-link">지시문 작성법</a>
+      <a href="#s8"  class="toc-fixed-link">고급 패턴</a>
+      <a href="#s9"  class="toc-fixed-link">테스트 & 이터레이션</a>
+      <a href="#s10" class="toc-fixed-link">10가지 핵심 규칙</a>
+    </nav>
+
+  </div><!-- /skills-layout -->
+
+</main>
+
+<!-- 의존성 순서: store → app -->
+<script src="../js/store.js"></script>
+<script src="../js/app.js"></script>
+
+<script>
+/* TOC 탭바 클릭 → 해당 섹션으로 스크롤 */
+document.addEventListener('DOMContentLoaded', () => {
+  const tocBtns = document.querySelectorAll('.skills-toc-btn');
+  tocBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      tocBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  /* 스크롤 시 우측 목차 active 갱신 */
+  const sections = document.querySelectorAll('.skills-section');
+  const tocLinks = document.querySelectorAll('.toc-fixed-link');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        tocLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+        });
+        /* TOC 탭바도 동기화 */
+        tocBtns.forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.target === id);
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px', threshold: 0 });
+
+  sections.forEach(section => observer.observe(section));
+});
+</script>
+
+</body>
+</html>

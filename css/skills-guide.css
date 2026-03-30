@@ -1,0 +1,464 @@
+/* ========================================
+   Skills Guide CSS — Claude Skills 가이드 페이지 전용
+   TOC 탭바, 섹션 레이아웃, 코드 블록, 예시 카드
+   ======================================== */
+
+/* ─── TOC 탭바 (settings-tabs 패턴 재사용) ─── */
+.skills-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+
+.skills-toc-btn {
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.skills-toc-btn:hover {
+  color: var(--text);
+}
+
+.skills-toc-btn.active {
+  color: var(--text);
+  border-bottom-color: var(--accent-pipe);
+}
+
+/* ─── 투 컬럼 레이아웃 ─── */
+.skills-layout {
+  display: grid;
+  grid-template-columns: 1fr 160px;
+  gap: 32px;
+  align-items: start;
+}
+
+/* ─── 우측 고정 목차 ─── */
+.toc-fixed {
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toc-fixed-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.toc-fixed-link {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background var(--transition-fast);
+  border-left: 2px solid transparent;
+  line-height: 1.4;
+}
+
+.toc-fixed-link:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.toc-fixed-link.active {
+  color: var(--accent-pipe);
+  border-left-color: var(--accent-pipe);
+  background: var(--surface2);
+}
+
+/* ─── 섹션 컨테이너 ─── */
+.skills-section {
+  margin-bottom: 32px;
+  scroll-margin-top: 20px;
+}
+
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-pipe);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-heading {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ─── 특징 카드 그리드 ─── */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.feature-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.feature-card-icon {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.feature-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.feature-card-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ─── 코드 블록 ─── */
+.code-block {
+  background: #1a1a2e;
+  border: 1px solid #2d2d4e;
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #e0e0f0;
+  line-height: 1.7;
+  overflow-x: auto;
+  margin-top: 12px;
+  white-space: pre;
+}
+
+.code-block .comment { color: #6a6a9a; }
+.code-block .key { color: #7ec8e3; }
+.code-block .value { color: #98e89a; }
+.code-block .string { color: #ffd580; }
+.code-block .punct { color: #888; }
+
+/* ─── 나쁜 예 / 좋은 예 ─── */
+.example-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.example-bad,
+.example-good {
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.example-bad {
+  background: rgba(212, 134, 10, 0.08);
+  border: 1px solid rgba(212, 134, 10, 0.3);
+}
+
+.example-good {
+  background: rgba(22, 163, 74, 0.08);
+  border: 1px solid rgba(22, 163, 74, 0.3);
+}
+
+.example-label {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+
+.example-bad .example-label { color: var(--accent-pm); }
+.example-good .example-label { color: var(--accent-dev); }
+
+.example-bad .code-block {
+  background: rgba(26, 16, 0, 0.9);
+  border-color: rgba(212, 134, 10, 0.2);
+  margin-top: 0;
+}
+
+.example-good .code-block {
+  background: rgba(0, 20, 8, 0.9);
+  border-color: rgba(22, 163, 74, 0.2);
+  margin-top: 0;
+}
+
+/* ─── 테이블 ─── */
+.field-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 12px;
+}
+
+.field-table th {
+  text-align: left;
+  padding: 8px 12px;
+  background: var(--surface2);
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+
+.field-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.field-table tr:last-child td {
+  border-bottom: none;
+}
+
+.field-table code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--surface2);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--accent-pipe);
+}
+
+.field-required {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-pm);
+  background: rgba(212, 134, 10, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.field-optional {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  background: var(--surface2);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* ─── 단계 프로세스 ─── */
+.process-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.process-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.process-step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-pipe);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.process-step-content strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.process-step-content p {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ─── 규칙 카드 그리드 ─── */
+.rule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.rule-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.rule-card:hover {
+  border-color: var(--accent-pipe);
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.06);
+}
+
+.rule-card-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-pipe), var(--accent-design));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rule-card-text {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* ─── 컨텍스트 로딩 단계 테이블 ─── */
+.context-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 12px;
+}
+
+.context-table th {
+  text-align: left;
+  padding: 8px 12px;
+  background: var(--surface2);
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.context-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.context-table tr:last-child td { border-bottom: none; }
+
+.ctx-step {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-pipe);
+}
+
+/* ─── 패턴 블록 ─── */
+.pattern-block {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.pattern-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--accent-design);
+}
+
+.pattern-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+/* ─── 인라인 코드 ─── */
+.inline-code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--surface2);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--accent-design);
+}
+
+/* ─── 반응형 ─── */
+@media (max-width: 900px) {
+  .skills-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .toc-fixed {
+    display: none;
+  }
+
+  .example-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .feature-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rule-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skills-toc-btn {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+}

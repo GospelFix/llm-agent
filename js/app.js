@@ -28,7 +28,8 @@ const NAV_ITEMS = [
   {
     section: '설정',
     items: [
-      { label: '설정', href: `${ROOT}pages/settings.html`, dot: 'var(--border)' },
+      { label: '설정',         href: `${ROOT}pages/settings.html`,     dot: 'var(--border)' },
+      { label: 'Claude Skills', href: `${ROOT}pages/skills-guide.html`, dot: 'var(--border)' },
     ],
   },
 ];
